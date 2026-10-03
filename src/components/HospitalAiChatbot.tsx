@@ -221,7 +221,6 @@ ${testsSummary}`;
     // Retrieve active API Key from environment or placeholder
     const effectiveApiKey =
       (import.meta.env.VITE_GEMINI_API_KEY as string) ||
-      (process.env.GEMINI_API_KEY as string) ||
       (YOUR_GEMINI_API_KEY && YOUR_GEMINI_API_KEY !== "YOUR_GEMINI_API_KEY" ? YOUR_GEMINI_API_KEY : "");
 
     // Prepare system instruction

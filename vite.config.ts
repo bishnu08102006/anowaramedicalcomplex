@@ -17,25 +17,8 @@ export default defineConfig(() => {
       },
     },
     build: {
-      rollupOptions: {
-        input: {
-          main: path.resolve(__dirname, 'index.html'),
-          doctors: path.resolve(__dirname, 'doctors.html'),
-          appointment: path.resolve(__dirname, 'appointment.html'),
-          diagnostics: path.resolve(__dirname, 'diagnostics.html'),
-          services: path.resolve(__dirname, 'services.html'),
-          management: path.resolve(__dirname, 'management.html'),
-          gallery: path.resolve(__dirname, 'gallery.html'),
-          blog: path.resolve(__dirname, 'blog.html'),
-          notices: path.resolve(__dirname, 'notices.html'),
-          contact: path.resolve(__dirname, 'contact.html'),
-          verifyStaff: path.resolve(__dirname, 'verify-staff.html'),
-          qrCodes: path.resolve(__dirname, 'qr-codes.html'),
-          sitemap: path.resolve(__dirname, 'sitemap.html'),
-          receptionist: path.resolve(__dirname, 'receptionist.html'),
-          admin: path.resolve(__dirname, 'admin.html'),
-        }
-      }
+      outDir: 'dist',
+      emptyOutDir: true,
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.

@@ -338,32 +338,40 @@ function getCrawlableContentForPage(key: string, page: any): string {
   `;
 }
 
+function injectCrawlableRoot(html: string, key: string, cfg: (typeof PAGES_SEO)[string]): string {
+  if (key === 'home') return html;
+  const crawlableBody = getCrawlableContentForPage(key, cfg);
+  return html.replace(/<div id="root"><\/div>/, crawlableBody);
+}
+
 function run() {
-  const baseHtmlPath = path.join(rootDir, 'index.html');
-  if (!fs.existsSync(baseHtmlPath)) {
+  const sourceIndexPath = path.join(rootDir, 'index.html');
+  if (!fs.existsSync(sourceIndexPath)) {
     console.error('index.html not found!');
     return;
   }
 
-  const baseHtml = fs.readFileSync(baseHtmlPath, 'utf-8');
+  const sourceHtml = fs.readFileSync(sourceIndexPath, 'utf-8');
+  const distIndexPath = path.join(distDir, 'index.html');
+  const builtHtml = fs.existsSync(distIndexPath) ? fs.readFileSync(distIndexPath, 'utf-8') : null;
+
+  if (!builtHtml) {
+    console.warn('dist/index.html not found — skipping production HTML. Run vite build first for Vercel.');
+  } else if (builtHtml.includes('/src/main.tsx')) {
+    console.error('dist/index.html still points at /src/main.tsx — Vite did not bundle the app.');
+    process.exit(1);
+  }
 
   // 1. Process all pages
   for (const [key, cfg] of Object.entries(PAGES_SEO)) {
-    let pageHtml = injectSeoIntoHtml(baseHtml, key);
-    
-    // Inject crawlable semantic body into <div id="root"></div> if not home
-    if (key !== 'home') {
-      const crawlableBody = getCrawlableContentForPage(key, cfg);
-      pageHtml = pageHtml.replace('<div id="root"></div>', crawlableBody);
-    }
+    // Dev/source copies keep /src/main.tsx so Vite can still compile them locally.
+    let pageHtml = injectCrawlableRoot(injectSeoIntoHtml(sourceHtml, key), key, cfg);
 
-    // Write physical root file: <key>.html
     if (key !== 'home') {
       const rootHtmlPath = path.join(rootDir, `${key}.html`);
       fs.writeFileSync(rootHtmlPath, pageHtml, 'utf-8');
       console.log(`✓ Created root physical HTML: ${key}.html`);
 
-      // Also create subfolder <key>/index.html
       const subDir = path.join(rootDir, key);
       if (!fs.existsSync(subDir)) {
         fs.mkdirSync(subDir, { recursive: true });
@@ -372,17 +380,18 @@ function run() {
       console.log(`✓ Created directory index HTML: ${key}/index.html`);
     }
 
-    // If dist exists, also write to dist
-    if (fs.existsSync(distDir)) {
+    // Production copies MUST keep Vite's hashed /assets/*.js so Vercel is not a blank page.
+    if (builtHtml) {
+      const distHtml = injectCrawlableRoot(injectSeoIntoHtml(builtHtml, key), key, cfg);
       if (key === 'home') {
-        fs.writeFileSync(path.join(distDir, 'index.html'), pageHtml, 'utf-8');
+        fs.writeFileSync(path.join(distDir, 'index.html'), distHtml, 'utf-8');
       } else {
-        fs.writeFileSync(path.join(distDir, `${key}.html`), pageHtml, 'utf-8');
+        fs.writeFileSync(path.join(distDir, `${key}.html`), distHtml, 'utf-8');
         const distSubDir = path.join(distDir, key);
         if (!fs.existsSync(distSubDir)) {
           fs.mkdirSync(distSubDir, { recursive: true });
         }
-        fs.writeFileSync(path.join(distSubDir, 'index.html'), pageHtml, 'utf-8');
+        fs.writeFileSync(path.join(distSubDir, 'index.html'), distHtml, 'utf-8');
       }
     }
   }

@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { Stethoscope, Calendar, Clock, MapPin, Search, Phone, UserCheck, ChevronRight, Printer, Download } from 'lucide-react';
+import { Stethoscope, Calendar, Clock, MapPin, Search, Phone, UserCheck, ChevronRight } from 'lucide-react';
 import { PageBanner } from '../components/PageBanner';
 import { dayOrder, dayNamesMap, dayNamesMapEn, DayKey } from '../data/doctors';
 import { useLanguage } from '../context/LanguageContext';
 import { useData } from '../context/DataContext';
 import { PageId } from '../components/Header';
-import { DoctorListPrintModal } from '../components/DoctorListPrintModal';
 
 interface DoctorsPageProps {
   onSelectDoctorForAppointment: (doctorName: string) => void;
@@ -23,7 +22,6 @@ export const DoctorsPage: React.FC<DoctorsPageProps> = ({
   const [selectedDay, setSelectedDay] = useState<string>('সকল');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState('ALL');
-  const [showPrintModal, setShowPrintModal] = useState(false);
 
   // Extract unique specialties
   const specialties = Array.from(
@@ -76,7 +74,7 @@ export const DoctorsPage: React.FC<DoctorsPageProps> = ({
               </p>
             </div>
 
-            {/* Specialty Filter dropdown and Print Button */}
+            {/* Specialty Filter dropdown */}
             <div className="flex flex-wrap items-center gap-2.5">
               <div className="flex items-center gap-2">
                 <label htmlFor="specialty-filter" className="text-xs font-semibold text-gray-600 shrink-0">
@@ -96,16 +94,6 @@ export const DoctorsPage: React.FC<DoctorsPageProps> = ({
                   ))}
                 </select>
               </div>
-
-              <button
-                onClick={() => setShowPrintModal(true)}
-                id="printDoctorsScheduleBtn"
-                className="inline-flex items-center gap-1.5 bg-[#0E3A53] hover:bg-[#0A2A3D] text-white text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl transition cursor-pointer shadow-xs"
-                title={isBn ? "ডাক্তারদের শিডিউল ও ভিজিটিং তালিকা ডাউনলোড বা প্রিন্ট করুন" : "Download or Print Doctor Schedule"}
-              >
-                <Download className="w-3.5 h-3.5 text-[#C9973B]" />
-                <span>{isBn ? "শিডিউল ডাউনলোড ও প্রিন্ট" : "Download / Print"}</span>
-              </button>
             </div>
           </div>
 
@@ -268,15 +256,6 @@ export const DoctorsPage: React.FC<DoctorsPageProps> = ({
           </button>
         </div>
       </div>
-
-      {/* Doctor Schedule Print Modal */}
-      {showPrintModal && (
-        <DoctorListPrintModal
-          doctors={filteredDoctors}
-          onClose={() => setShowPrintModal(false)}
-          isBn={isBn}
-        />
-      )}
     </div>
   );
 };
