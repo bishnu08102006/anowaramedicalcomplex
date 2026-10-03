@@ -1,0 +1,6 @@
+{
+  "name": "আনোয়ারা মেডিকেল কমপ্লেক্স (Anowara Medical Complex)",
+  "description": "আনোয়ারা মেডিকেল কমপ্লেক্স (Anowara Medical Complex), ওয়াপদা সদর রোড, মেডিকেল মোড়, পলাশ, নরসিংদী। ডায়াগনস্টিক, ২৪ ঘণ্টা জরুরী সেবা ও বিশেষজ্ঞ ডাক্তার।",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

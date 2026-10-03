@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <!-- Text Arc Path along the top -->
+    <path id="logo-text-arc" d="M 45,340 A 215,215 0 1,1 455,340" fill="none" />
+  </defs>
+
+  <!-- Arched Green Text: ANOWARA MEDICAL COMPLEX -->
+  <text fill="#1A7E3E" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-weight="900" font-size="33" letter-spacing="2.8px">
+    <textPath href="#logo-text-arc" startOffset="50%" text-anchor="middle">
+      ANOWARA MEDICAL COMPLEX
+    </textPath>
+  </text>
+
+  <!-- Central Emblem Group -->
+  <g id="emblem-group">
+    <!-- Red Outer Stylized 'A' -->
+    <path
+      d="
+        M 215, 130
+        L 285, 130
+        L 380, 415
+        L 430, 415
+        L 430, 452
+        L 70, 452
+        L 70, 415
+        L 120, 415
+        Z
+      "
+      fill="#BA1B1D"
+    />
+
+    <!-- White Inner Cutout / Crest Silhouette inside 'A' -->
+    <path
+      d="
+        M 166, 452
+        C 166, 395 180, 335 212, 318
+        C 228, 308 240, 338 250, 345
+        C 260, 338 272, 308 288, 318
+        C 320, 335 334, 395 334, 452
+        Z
+      "
+      fill="#FFFFFF"
+    />
+
+    <!-- Bold Red 'C' with classic serifs Centered Inside the White Crest -->
+    <path
+      d="
+        M 292, 358
+        L 282, 358
+        C 278, 365 272, 370 263, 373
+        C 256, 370 248, 368 242, 368
+        C 225, 368 213, 378 213, 394
+        C 213, 410 225, 420 242, 420
+        C 250, 420 258, 417 265, 413
+        C 273, 417 280, 423 284, 430
+        L 294, 430
+        C 289, 418 283, 408 283, 394
+        C 283, 380 288, 370 292, 358
+        Z
+        M 245, 404
+        C 236, 404 230, 399 230, 394
+        C 230, 388 236, 383 245, 383
+        C 255, 383 263, 388 266, 394
+        C 263, 400 255, 404 245, 404
+        Z
+      "
+      fill="none"
+    />
+    <!-- Refined high-fidelity Red 'C' -->
+    <path
+      d="
+        M 288, 354
+        L 293, 364
+        C 285, 358 276, 354 265, 354
+        C 236, 354 216, 372 216, 394
+        C 216, 416 236, 434 265, 434
+        C 276, 434 285, 430 293, 424
+        L 288, 434
+        C 278, 442 265, 446 250, 446
+        C 216, 446 195, 422 195, 394
+        C 195, 366 216, 342 250, 342
+        C 265, 342 278, 346 288, 354
+        Z
+      "
+      fill="#BA1B1D"
+    />
+  </g>
+</svg>

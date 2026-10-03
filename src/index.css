@@ -1,0 +1,268 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #132A33;
+  --navy: #0E3A53;
+  --navy-deep: #0A2A3D;
+  --teal: #2D8FC1;
+  --teal-soft: #E7F2F8;
+  --gold: #C9973B;
+  --gold-soft: #F7EEDC;
+  --emergency: #AE3B2E;
+  --emergency-soft: #FBE9E6;
+  --paper: #F6F8F7;
+  --line: #DDE6E9;
+}
+
+* {
+  font-family: 'Hind Siliguri', 'Noto Sans Bengali', system-ui, -apple-system, sans-serif;
+}
+
+.font-display {
+  font-family: 'Hind Siliguri', 'Noto Sans Bengali', system-ui, -apple-system, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--paper);
+  color: var(--ink);
+}
+
+.bg-navy {
+  background-color: var(--navy);
+}
+
+.bg-navy-deep {
+  background-color: var(--navy-deep);
+}
+
+.text-navy {
+  color: var(--navy);
+}
+
+.bg-teal-soft {
+  background-color: var(--teal-soft);
+}
+
+.text-teal {
+  color: var(--teal);
+}
+
+.border-line {
+  border-color: var(--line);
+}
+
+.bg-gold {
+  background-color: var(--gold);
+}
+
+.text-gold {
+  color: var(--gold);
+}
+
+.bg-gold-soft {
+  background-color: var(--gold-soft);
+}
+
+.bg-emergency {
+  background-color: var(--emergency);
+}
+
+.text-emergency {
+  color: var(--emergency);
+}
+
+.bg-emergency-soft {
+  background-color: var(--emergency-soft);
+}
+
+.stitch::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 4px;
+  background-repeat: repeat-x;
+  background-size: 14px 4px;
+  background-image: linear-gradient(90deg, var(--gold) 0 8px, transparent 8px 14px);
+  opacity: 0.9;
+}
+
+.doc-card {
+  border-left: 3px solid var(--teal);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.doc-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px -10px rgba(14, 58, 83, 0.22);
+}
+
+.gallery-item {
+  aspect-ratio: 4/3;
+  overflow: hidden;
+}
+
+.gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.gallery-item:hover img {
+  transform: scale(1.06);
+}
+
+/* Custom Scrollbar for notice & tables */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* When printing, hide website navigation, footer, floating buttons, and control elements */
+  header,
+  footer,
+  nav,
+  #floating-call-btn,
+  #floating-emergency-btn,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  body.printing-modal header,
+  body.printing-modal footer,
+  body.printing-modal nav,
+  body.printing-modal #floating-call-btn,
+  body.printing-modal #floating-emergency-btn,
+  body.printing-modal .print\:hidden {
+    display: none !important;
+  }
+
+  /* Single target element printing for staff verified card */
+  body.amc-printing-div header,
+  body.amc-printing-div footer,
+  body.amc-printing-div nav,
+  body.amc-printing-div #floating-call-btn,
+  body.amc-printing-div #floating-emergency-btn,
+  body.amc-printing-div .print\:hidden,
+  body.amc-printing-div .no-download-capture,
+  body.amc-printing-div [data-no-capture="true"] {
+    display: none !important;
+  }
+
+  body.amc-printing-div #staff-verified-card {
+    box-shadow: none !important;
+    border: 1px solid #cbd5e1 !important;
+    background: #ffffff !important;
+  }
+
+  /* Target element printing for receptionist all serials table */
+  body.amc-print-active header,
+  body.amc-print-active footer,
+  body.amc-print-active nav,
+  body.amc-print-active #floating-call-btn,
+  body.amc-print-active #floating-emergency-btn,
+  body.amc-print-active #notice-marquee,
+  body.amc-print-active #receptionist-dashboard-page > div:not(#receptionist-print-wrapper),
+  body.amc-print-active .print\:hidden,
+  body.amc-print-doctors header,
+  body.amc-print-doctors footer,
+  body.amc-print-doctors nav,
+  body.amc-print-doctors #floating-call-btn,
+  body.amc-print-doctors #floating-emergency-btn,
+  body.amc-print-doctors #notice-marquee,
+  body.amc-print-doctors #admin-dashboard-page > div:not(#admin-doctors-print-wrapper),
+  body.amc-print-doctors .print\:hidden,
+  body.amc-print-tests header,
+  body.amc-print-tests footer,
+  body.amc-print-tests nav,
+  body.amc-print-tests #floating-call-btn,
+  body.amc-print-tests #floating-emergency-btn,
+  body.amc-print-tests #notice-marquee,
+  body.amc-print-tests #admin-dashboard-page > div:not(#admin-tests-print-wrapper),
+  body.amc-print-tests .print\:hidden {
+    display: none !important;
+  }
+
+  body.amc-print-active #receptionist-print-wrapper,
+  body.amc-print-doctors #admin-doctors-print-wrapper,
+  body.amc-print-tests #admin-tests-print-wrapper {
+    position: static !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    display: block !important;
+    z-index: 99999 !important;
+    background: #ffffff !important;
+  }
+
+  /* Ensure printable modal content displays fully */
+  .printable-modal-backdrop {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  .printable-modal-content {
+    box-shadow: none !important;
+    border: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  table {
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+
+  @page {
+    margin: 10mm;
+    size: auto;
+  }
+}

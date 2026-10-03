@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /receptionist
+
+User-agent: Googlebot
+Allow: /
+Disallow: /admin
+Disallow: /receptionist
+
+User-agent: Bingbot
+Allow: /
+Disallow: /admin
+Disallow: /receptionist
+
+Host: https://anowaramedicalcomplex.com
+Sitemap: https://anowaramedicalcomplex.com/sitemap.xml
