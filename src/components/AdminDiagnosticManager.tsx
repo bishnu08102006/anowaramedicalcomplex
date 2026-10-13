@@ -459,14 +459,15 @@ export const AdminDiagnosticManager: React.FC = () => {
                       <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => handleOpenEditModal(test)}
-                          className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
-                          title={isBn ? 'সম্পাদনা করুন' : 'Edit'}
+                          className="px-2.5 py-1.5 text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors flex items-center gap-1 text-xs font-semibold cursor-pointer"
+                          title={isBn ? 'পরীক্ষার নাম ও তথ্য পরিবর্তন করুন' : 'Edit Test Name & Price'}
                         >
-                          <Edit3 className="w-4 h-4" />
+                          <Edit3 className="w-3.5 h-3.5 text-blue-600" />
+                          <span>{isBn ? 'এডিট' : 'Edit'}</span>
                         </button>
                         <button
                           onClick={() => setDeleteTarget(test)}
-                          className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                           title={isBn ? 'মুছে ফেলুন' : 'Delete'}
                         >
                           <Trash2 className="w-4 h-4" />

@@ -24,6 +24,9 @@ import { StaffVerificationPage } from './pages/StaffVerificationPage';
 import { QrCodesPage } from './pages/QrCodesPage';
 import { SitemapPage } from './pages/SitemapPage';
 import { InstallPage } from './pages/InstallPage';
+import { VisualDesignerPage } from './pages/VisualDesignerPage';
+import { LabSpecialistPage } from './pages/LabSpecialistPage';
+import { ReceiptGeneratorPage } from './pages/ReceiptGeneratorPage';
 
 function parseLocationToPage(): PageId {
   if (typeof window !== 'undefined') {
@@ -38,7 +41,10 @@ function parseLocationToPage(): PageId {
       if (pageParam === 'qr' || pageParam === 'qrcode' || pageParam === 'qr-codes') return 'qr-codes';
       if (pageParam === 'sitemap' || pageParam === 'categories') return 'sitemap';
       if (pageParam === 'install' || pageParam === 'install-app' || pageParam === 'download' || pageParam === 'app') return 'install';
-      if (['doctors', 'diagnostics', 'services', 'management', 'gallery', 'appointment', 'blog', 'notices', 'receptionist', 'admin', 'contact', 'verify-staff', 'install'].includes(pageParam)) {
+      if (pageParam === 'visual-designer' || pageParam === 'visualdesigner' || pageParam === 'designer') return 'visual-designer';
+      if (pageParam === 'lab-specialist' || pageParam === 'labspecialist' || pageParam === 'lab') return 'lab-specialist';
+      if (pageParam === 'receipt-generator' || pageParam === 'receiptgenerator' || pageParam === 'receipt' || pageParam === 'money-receipt') return 'receipt-generator';
+      if (['doctors', 'diagnostics', 'services', 'management', 'gallery', 'appointment', 'blog', 'notices', 'receptionist', 'admin', 'contact', 'verify-staff', 'install', 'visual-designer', 'lab-specialist', 'receipt-generator'].includes(pageParam)) {
         return pageParam as PageId;
       }
     }
@@ -46,6 +52,15 @@ function parseLocationToPage(): PageId {
     const fullHref = window.location.href.toLowerCase();
     if (fullHref.includes('verify-staff') || fullHref.includes('verify') || fullHref.includes('id-card')) {
       return 'verify-staff';
+    }
+    if (fullHref.includes('visual-designer') || fullHref.includes('visualdesigner')) {
+      return 'visual-designer';
+    }
+    if (fullHref.includes('lab-specialist') || fullHref.includes('labspecialist')) {
+      return 'lab-specialist';
+    }
+    if (fullHref.includes('receipt-generator') || fullHref.includes('receiptgenerator') || fullHref.includes('/receipt.')) {
+      return 'receipt-generator';
     }
     if (fullHref.includes('qr-codes') || fullHref.includes('qrcode')) {
       return 'qr-codes';
@@ -110,6 +125,19 @@ function parseLocationToPage(): PageId {
         case 'sitemap':
         case 'categories':
           return 'sitemap';
+        case 'visual-designer':
+        case 'visualdesigner':
+        case 'designer':
+          return 'visual-designer';
+        case 'lab-specialist':
+        case 'labspecialist':
+        case 'lab':
+          return 'lab-specialist';
+        case 'receipt-generator':
+        case 'receiptgenerator':
+        case 'receipt':
+        case 'money-receipt':
+          return 'receipt-generator';
       }
     }
 
@@ -170,6 +198,19 @@ function parseLocationToPage(): PageId {
         case 'download':
         case 'app':
           return 'install';
+        case 'visual-designer':
+        case 'visualdesigner':
+        case 'designer':
+          return 'visual-designer';
+        case 'lab-specialist':
+        case 'labspecialist':
+        case 'lab':
+          return 'lab-specialist';
+        case 'receipt-generator':
+        case 'receiptgenerator':
+        case 'receipt':
+        case 'money-receipt':
+          return 'receipt-generator';
       }
     }
   }
@@ -273,6 +314,24 @@ const PAGE_SEO: Record<PageId, { titleBn: string; titleEn: string; descBn: strin
     titleEn: "Install In Your Device (Official App) | Anowara Medical Complex Palash",
     descBn: "ব্রাউজারের ঝামেলা ছাড়াই ফোন বা কম্পিউটারের হোমস্ক্রিনে ১-ক্লিকে আনোয়ারা মেডিকেল কমপ্লেক্স অফিসিয়াল অ্যাপ ইনস্টল করুন।",
     descEn: "Install the official Anowara Medical Complex app on your phone, tablet, or desktop for instant 1-click access."
+  },
+  'visual-designer': {
+    titleBn: "ভিজ্যুয়াল ডিজাইনার পোর্টাল | আনোয়ারা মেডিকেল কমপ্লেক্স",
+    titleEn: "Visual Designer Portal | Anowara Medical Complex",
+    descBn: "আনোয়ারা মেডিকেল কমপ্লেক্সের ভিজ্যুয়াল ডিজাইনার স্পেশালিস্ট পোর্টাল ও ওয়ার্কস্পেস।",
+    descEn: "Visual Designer portal and creative workspace for Anowara Medical Complex."
+  },
+  'lab-specialist': {
+    titleBn: "ল্যাব স্পেশালিস্ট পোর্টাল | আনোয়ারা মেডিকেল কমপ্লেক্স",
+    titleEn: "Lab Specialist Portal | Anowara Medical Complex",
+    descBn: "আনোয়ারা মেডিকেল কমপ্লেক্সের ল্যাব ও প্যাথলজি স্পেশালিস্ট ওয়ার্কস্পেস।",
+    descEn: "Lab and pathology specialist portal and workspace for Anowara Medical Complex."
+  },
+  'receipt-generator': {
+    titleBn: "মানি রিসিট জেনারেটর ও বিলিং | আনোয়ারা মেডিকেল কমপ্লেক্স",
+    titleEn: "Money Receipt Generator & Billing | Anowara Medical Complex",
+    descBn: "রোগীদের ডায়াগনস্টিক পরীক্ষার ফি ও চিকিৎসা সেবার ডিজিটাল মানি রিসিট প্রিন্ট ও জেনারেট করুন।",
+    descEn: "Generate and print patient diagnostic test fee money receipts and bills."
   }
 };
 
@@ -483,13 +542,38 @@ function MainApp() {
             onNavigate={navigateTo}
           />
         )}
+
+        {currentPage === 'visual-designer' && (
+          <VisualDesignerPage
+            onNavigateHome={() => navigateTo('home')}
+            onNavigate={navigateTo}
+          />
+        )}
+
+        {currentPage === 'lab-specialist' && (
+          <LabSpecialistPage
+            onNavigateHome={() => navigateTo('home')}
+            onNavigate={navigateTo}
+          />
+        )}
+
+        {currentPage === 'receipt-generator' && (
+          <ReceiptGeneratorPage
+            onNavigateHome={() => navigateTo('home')}
+            onNavigate={navigateTo}
+          />
+        )}
       </main>
 
       {/* 4. Global Footer with Language & Page Links */}
       <Footer onNavigate={navigateTo} />
 
-      {/* 5. Floating Quick Action & Emergency Dial - Hidden on Admin and Receptionist dashboards so it does not block tables/filters */}
-      {currentPage !== 'admin' && currentPage !== 'receptionist' && (
+      {/* 5. Floating Quick Action & Emergency Dial - Hidden on Admin, Receptionist, Specialist, and Receipt dashboards so it does not block tables/forms */}
+      {currentPage !== 'admin' &&
+        currentPage !== 'receptionist' &&
+        currentPage !== 'visual-designer' &&
+        currentPage !== 'lab-specialist' &&
+        currentPage !== 'receipt-generator' && (
         <>
           <FloatingEmergencyButton onNavigate={navigateTo} />
           <HospitalAiChatbot onNavigate={navigateTo} />

@@ -24,9 +24,11 @@ export interface LockoutStatus {
   attemptsLeft: number;
 }
 
+export type SecurityRole = 'admin' | 'receptionist' | 'visual_designer' | 'lab_specialist';
+
 export interface SecuritySession {
   token: string;
-  role: 'admin' | 'receptionist';
+  role: SecurityRole;
   username: string;
   createdAt: number;
   expiresAt: number;
@@ -158,7 +160,7 @@ export function checkLockout(scope: 'admin' | 'receptionist'): LockoutStatus {
 /**
  * Record a failed login attempt; triggers lockout if threshold reached
  */
-export function recordFailedAttempt(scope: 'admin' | 'receptionist'): LockoutStatus {
+export function recordFailedAttempt(scope: SecurityRole): LockoutStatus {
   try {
     const key = `${LOCKOUT_KEY}_${scope}`;
     const stored = localStorage.getItem(key);
@@ -186,7 +188,7 @@ export function recordFailedAttempt(scope: 'admin' | 'receptionist'): LockoutSta
 /**
  * Reset failed attempts upon successful login
  */
-export function clearLockout(scope: 'admin' | 'receptionist'): void {
+export function clearLockout(scope: SecurityRole): void {
   try {
     localStorage.removeItem(`${LOCKOUT_KEY}_${scope}`);
   } catch {
@@ -195,9 +197,38 @@ export function clearLockout(scope: 'admin' | 'receptionist'): void {
 }
 
 /**
+ * Check lockout status
+ */
+export function checkLockoutStatus(scope: SecurityRole): LockoutStatus {
+  try {
+    const stored = localStorage.getItem(`${LOCKOUT_KEY}_${scope}`);
+    if (!stored) {
+      return { isLocked: false, remainingSeconds: 0, attemptsLeft: MAX_FAILED_ATTEMPTS };
+    }
+
+    const data: { attempts: number[]; lockedUntil?: number } = JSON.parse(stored);
+    const now = Date.now();
+
+    // If locked and still within lockout period
+    if (data.lockedUntil && data.lockedUntil > now) {
+      const remainingSeconds = Math.ceil((data.lockedUntil - now) / 1000);
+      return { isLocked: true, remainingSeconds, attemptsLeft: 0 };
+    }
+
+    // Filter attempts within the active window
+    const recentAttempts = (data.attempts || []).filter(t => now - t < ATTEMPT_WINDOW_MS);
+    const attemptsLeft = Math.max(0, MAX_FAILED_ATTEMPTS - recentAttempts.length);
+
+    return { isLocked: false, remainingSeconds: 0, attemptsLeft };
+  } catch {
+    return { isLocked: false, remainingSeconds: 0, attemptsLeft: MAX_FAILED_ATTEMPTS };
+  }
+}
+
+/**
  * Create a cryptographically secure session
  */
-export function createSecureSession(role: 'admin' | 'receptionist', username: string): SecuritySession {
+export function createSecureSession(role: SecurityRole, username: string): SecuritySession {
   const array = new Uint8Array(32);
   window.crypto.getRandomValues(array);
   const token = Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
@@ -218,7 +249,7 @@ export function createSecureSession(role: 'admin' | 'receptionist', username: st
 /**
  * Validate active session
  */
-export function getActiveSession(role: 'admin' | 'receptionist'): SecuritySession | null {
+export function getActiveSession(role: SecurityRole): SecuritySession | null {
   try {
     const raw = sessionStorage.getItem(`${SESSION_KEY}_${role}`);
     if (!raw) return null;
@@ -249,7 +280,7 @@ export function getActiveSession(role: 'admin' | 'receptionist'): SecuritySessio
 /**
  * Destroy active session
  */
-export function destroySession(role: 'admin' | 'receptionist'): void {
+export function destroySession(role: SecurityRole): void {
   sessionStorage.removeItem(`${SESSION_KEY}_${role}`);
 }
 

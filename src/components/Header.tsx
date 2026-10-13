@@ -42,7 +42,10 @@ export type PageId =
   | 'verify-staff'
   | 'qr-codes'
   | 'sitemap'
-  | 'install';
+  | 'install'
+  | 'visual-designer'
+  | 'lab-specialist'
+  | 'receipt-generator';
 
 interface HeaderProps {
   currentPage: PageId;

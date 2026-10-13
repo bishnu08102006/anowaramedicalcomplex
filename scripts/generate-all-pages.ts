@@ -409,16 +409,25 @@ function run() {
 Allow: /
 Disallow: /admin
 Disallow: /receptionist
+Disallow: /visual-designer
+Disallow: /lab-specialist
+Disallow: /receipt-generator
 
 User-agent: Googlebot
 Allow: /
 Disallow: /admin
 Disallow: /receptionist
+Disallow: /visual-designer
+Disallow: /lab-specialist
+Disallow: /receipt-generator
 
 User-agent: Bingbot
 Allow: /
 Disallow: /admin
 Disallow: /receptionist
+Disallow: /visual-designer
+Disallow: /lab-specialist
+Disallow: /receipt-generator
 
 Host: https://anowaramedicalcomplex.com
 Sitemap: https://anowaramedicalcomplex.com/sitemap.xml

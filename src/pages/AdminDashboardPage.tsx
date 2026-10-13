@@ -131,6 +131,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
     resetNotices,
     blogs, 
     addBlog, 
+    updateBlog,
     removeBlog, 
     resetBlogs,
     appointments,
@@ -499,6 +500,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
   };
 
   // New Blog form state
+  const [editingBlogId, setEditingBlogId] = useState<string | null>(null);
   const [newBlog, setNewBlog] = useState({
     title: '',
     titleEn: '',
@@ -514,6 +516,48 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
     readTimeEn: '4 min read',
     tags: 'স্বাস্থ্য, পরামর্শ, চিকিৎসা',
   });
+
+  const handleOpenAddBlogModal = () => {
+    setEditingBlogId(null);
+    setNewBlog({
+      title: '',
+      titleEn: '',
+      author: 'ডাঃ বিশেষজ্ঞ কনসালটেন্ট',
+      authorEn: 'Specialist Consultant',
+      category: 'সাধারণ স্বাস্থ্য',
+      categoryEn: 'General Health',
+      summary: '',
+      summaryEn: '',
+      content: '',
+      contentEn: '',
+      readTime: '৪ মিনিট',
+      readTimeEn: '4 min read',
+      tags: 'স্বাস্থ্য, পরামর্শ, চিকিৎসা',
+    });
+    setBlogFormError('');
+    setIsBlogModalOpen(true);
+  };
+
+  const handleOpenEditBlogModal = (blog: any) => {
+    setEditingBlogId(blog.id);
+    setNewBlog({
+      title: blog.title || '',
+      titleEn: blog.titleEn || '',
+      author: blog.author || 'ডাঃ বিশেষজ্ঞ কনসালটেন্ট',
+      authorEn: blog.authorEn || 'Specialist Consultant',
+      category: blog.category || 'সাধারণ স্বাস্থ্য',
+      categoryEn: blog.categoryEn || 'General Health',
+      summary: blog.summary || '',
+      summaryEn: blog.summaryEn || '',
+      content: blog.content || '',
+      contentEn: blog.contentEn || '',
+      readTime: blog.readTime || '৪ মিনিট',
+      readTimeEn: blog.readTimeEn || '4 min read',
+      tags: Array.isArray(blog.tags) ? blog.tags.join(', ') : (blog.tags || 'স্বাস্থ্য, পরামর্শ, চিকিৎসা'),
+    });
+    setBlogFormError('');
+    setIsBlogModalOpen(true);
+  };
 
   // New Notice form state
   const [editingNoticeId, setEditingNoticeId] = useState<string | null>(null);
@@ -634,7 +678,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
     }
   };
 
-  // Add Doctor Handler
+  // Add or Update Doctor Handler
   const handleAddDoctor = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newDoc.name.trim() || !newDoc.specialty.trim()) {
@@ -643,7 +687,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
     }
     setDoctorFormError('');
 
-    addDoctor({
+    const docPayload = {
       name: newDoc.name.trim(),
       nameEn: newDoc.nameEn.trim() || newDoc.name.trim(),
       specialty: newDoc.specialty.trim(),
@@ -655,10 +699,18 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
       days: newDoc.days.length ? newDoc.days : ['রবি', 'সোম', 'মঙ্গল'],
       room: newDoc.room.trim(),
       roomEn: newDoc.roomEn.trim(),
-    });
+      ...(newDoc.photo ? { photo: newDoc.photo } : {})
+    };
 
-    setToastMessage(isBn ? `ডাঃ "${newDoc.name}" সফলভাবে যুক্ত হয়েছেন!` : `Dr. "${newDoc.name}" added successfully!`);
+    if (editingDoctorId) {
+      updateDoctor(editingDoctorId, docPayload);
+      setToastMessage(isBn ? `ডাঃ "${newDoc.name}" এর তথ্য সফলভাবে আপডেট হয়েছে!` : `Dr. "${newDoc.name}" updated successfully!`);
+    } else {
+      addDoctor(docPayload);
+      setToastMessage(isBn ? `ডাঃ "${newDoc.name}" সফলভাবে যুক্ত হয়েছেন!` : `Dr. "${newDoc.name}" added successfully!`);
+    }
 
+    setEditingDoctorId(null);
     setNewDoc({
       name: '',
       nameEn: '',
@@ -671,11 +723,12 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
       days: ['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহঃ'],
       room: 'রুম নং ১০৫',
       roomEn: 'Room 105',
+      photo: '',
     });
     setIsDoctorModalOpen(false);
   };
 
-  // Add Blog Handler
+  // Add or Update Blog Handler
   const handleAddBlog = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newBlog.title.trim() || !newBlog.content.trim()) {
@@ -692,7 +745,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
       const dateBn = `${now.getDate()} ${monthsBn[now.getMonth()]}, ${now.getFullYear()}`;
       const dateEn = `${monthsEn[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
 
-      await addBlog({
+      const blogPayload = {
         title: newBlog.title.trim(),
         titleEn: newBlog.titleEn.trim() || newBlog.title.trim(),
         author: newBlog.author.trim() || 'মেডিকেল স্পেশালিস্ট',
@@ -709,10 +762,17 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
         readTimeEn: newBlog.readTimeEn.trim() || '4 min read',
         image: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=800&q=80',
         tags: newBlog.tags.split(',').map(t => t.trim()).filter(Boolean),
-      });
+      };
 
-      setToastMessage(isBn ? `ব্লগ "${newBlog.title}" সফলভাবে ক্লাউড সার্ভারে (ফায়ারবেস) সংরক্ষিত ও প্রকাশিত হয়েছে!` : `Blog published & saved to Firebase cloud server!`);
+      if (editingBlogId) {
+        await updateBlog(editingBlogId, blogPayload);
+        setToastMessage(isBn ? `ব্লগ "${newBlog.title}" সফলভাবে আপডেট হয়েছে!` : `Blog "${newBlog.title}" updated successfully!`);
+      } else {
+        await addBlog(blogPayload);
+        setToastMessage(isBn ? `ব্লগ "${newBlog.title}" সফলভাবে ক্লাউড সার্ভারে (ফায়ারবেস) সংরক্ষিত ও প্রকাশিত হয়েছে!` : `Blog published & saved to Firebase cloud server!`);
+      }
 
+      setEditingBlogId(null);
       setNewBlog({
         title: '',
         titleEn: '',
@@ -1296,7 +1356,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                   <span className="hidden sm:inline">{isBn ? "Excel" : "Excel"}</span>
                 </button>
                 <button
-                  onClick={() => setIsDoctorModalOpen(true)}
+                  onClick={handleOpenAddDoctorModal}
                   className="bg-[#0E3A53] hover:bg-[#0A2A3D] text-white font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1 shrink-0 transition cursor-pointer shadow"
                 >
                   <Plus className="w-4 h-4" />
@@ -1315,13 +1375,22 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                       <h4 className="font-bold text-sm text-[#0E3A53]">{doc.name}</h4>
                       <p className="text-[11px] text-gray-400">{doc.nameEn}</p>
                     </div>
-                    <button
-                      onClick={() => setDeleteTarget({ type: 'doctor', id: doc.id, name: doc.name })}
-                      className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition cursor-pointer shrink-0"
-                      title="ডাক্তার মুছে ফেলুন"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={() => handleOpenEditDoctorModal(doc)}
+                        className="p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition cursor-pointer"
+                        title={isBn ? "ডাক্তার সম্পাদনা ও নাম পরিবর্তন" : "Edit Doctor Name & Details"}
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setDeleteTarget({ type: 'doctor', id: doc.id, name: doc.name })}
+                        className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition cursor-pointer"
+                        title="ডাক্তার মুছে ফেলুন"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-1.5 pt-1">
@@ -1360,7 +1429,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                     <th className="py-3 px-4">ডিগ্রি</th>
                     <th className="py-3 px-4">ভিজিটিং দিন ও সময়</th>
                     <th className="py-3 px-4">রুম</th>
-                    <th className="py-3 px-4 text-right">মুছে ফেলুন</th>
+                    <th className="py-3 px-4 text-center">অ্যাকশন</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -1385,14 +1454,24 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                       <td className="py-3 px-4 text-gray-600 whitespace-nowrap">
                         {doc.room || 'রুম ১০১'}
                       </td>
-                      <td className="py-3 px-4 text-right whitespace-nowrap">
-                        <button
-                          onClick={() => setDeleteTarget({ type: 'doctor', id: doc.id, name: doc.name })}
-                          className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition cursor-pointer"
-                          title="ডাক্তার মুছে ফেলুন"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      <td className="py-3 px-4 text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={() => handleOpenEditDoctorModal(doc)}
+                            className="p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition cursor-pointer flex items-center gap-1 text-[11px] font-semibold"
+                            title={isBn ? "ডাক্তার সম্পাদনা ও নাম পরিবর্তন" : "Edit Doctor Name & Details"}
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                            <span>{isBn ? "এডিট" : "Edit"}</span>
+                          </button>
+                          <button
+                            onClick={() => setDeleteTarget({ type: 'doctor', id: doc.id, name: doc.name })}
+                            className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition cursor-pointer"
+                            title="ডাক্তার মুছে ফেলুন"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1427,7 +1506,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                   />
                 </div>
                 <button
-                  onClick={() => setIsBlogModalOpen(true)}
+                  onClick={handleOpenAddBlogModal}
                   className="bg-[#0E3A53] hover:bg-[#0A2A3D] text-white font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1 shrink-0 transition cursor-pointer shadow"
                 >
                   <Plus className="w-4 h-4" />
@@ -1445,13 +1524,22 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                     <span className="bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded font-semibold text-[10px]">
                       {blog.category}
                     </span>
-                    <button
-                      onClick={() => setDeleteTarget({ type: 'blog', id: blog.id, name: blog.title })}
-                      className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition cursor-pointer shrink-0"
-                      title="ব্লগ মুছে ফেলুন"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={() => handleOpenEditBlogModal(blog)}
+                        className="p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition cursor-pointer"
+                        title={isBn ? "ব্লগ সম্পাদনা করুন" : "Edit Blog Article"}
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setDeleteTarget({ type: 'blog', id: blog.id, name: blog.title })}
+                        className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition cursor-pointer"
+                        title="ব্লগ মুছে ফেলুন"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                   <h4 className="font-bold text-xs sm:text-sm text-[#0E3A53]">{blog.title}</h4>
                   <p className="text-[11px] text-gray-500 line-clamp-2">{blog.summary}</p>
@@ -1473,7 +1561,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                     <th className="py-3 px-4">লেখক / ডাক্তার</th>
                     <th className="py-3 px-4">প্রকাশের তারিখ</th>
                     <th className="py-3 px-4">পড়ার সময়</th>
-                    <th className="py-3 px-4 text-right">মুছে ফেলুন</th>
+                    <th className="py-3 px-4 text-center">অ্যাকশন</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -1497,14 +1585,24 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                       <td className="py-3 px-4 text-gray-500 whitespace-nowrap">
                         {blog.readTime}
                       </td>
-                      <td className="py-3 px-4 text-right whitespace-nowrap">
-                        <button
-                          onClick={() => setDeleteTarget({ type: 'blog', id: blog.id, name: blog.title })}
-                          className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition cursor-pointer"
-                          title="ব্লগ মুছে ফেলুন"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      <td className="py-3 px-4 text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={() => handleOpenEditBlogModal(blog)}
+                            className="p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition cursor-pointer flex items-center gap-1 text-[11px] font-semibold"
+                            title={isBn ? "ব্লগ সম্পাদনা করুন" : "Edit Blog Article"}
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                            <span>{isBn ? "এডিট" : "Edit"}</span>
+                          </button>
+                          <button
+                            onClick={() => setDeleteTarget({ type: 'blog', id: blog.id, name: blog.title })}
+                            className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition cursor-pointer"
+                            title="ব্লগ মুছে ফেলুন"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -2279,10 +2377,12 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
 
             <h3 className="font-bold text-base text-[#0E3A53] mb-1 flex items-center gap-2">
               <Stethoscope className="w-5 h-5 text-[#2D8FC1]" />
-              <span>{isBn ? "নতুন ডাক্তার যুক্ত করুন" : "Add Doctor"}</span>
+              <span>{editingDoctorId ? (isBn ? "ডাক্তারের তথ্য ও নাম সম্পাদনা" : "Edit Doctor Details") : (isBn ? "নতুন ডাক্তার যুক্ত করুন" : "Add Doctor")}</span>
             </h3>
             <p className="text-xs text-gray-500 mb-4">
-              {isBn ? "ডাক্তারের নাম, বিশেষত্ব ও ভিজিটিং সময়সূচী প্রদান করুন।" : "Enter doctor credentials and visiting hours."}
+              {editingDoctorId 
+                ? (isBn ? "ডাক্তারের নাম, চেম্বার শিডিউল বা তথ্য পরিবর্তন করে সংরক্ষণ করুন।" : "Update doctor name, schedules or details.") 
+                : (isBn ? "ডাক্তারের নাম, বিশেষত্ব ও ভিজিটিং সময়সূচী প্রদান করুন।" : "Enter doctor credentials and visiting hours.")}
             </p>
 
             {doctorFormError && (
@@ -2388,7 +2488,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                   type="submit"
                   className="px-5 py-2 rounded-xl bg-[#0E3A53] hover:bg-[#0A2A3D] text-white font-bold transition cursor-pointer"
                 >
-                  {isBn ? "ডাক্তার সংরক্ষণ করুন" : "Save Doctor"}
+                  {editingDoctorId ? (isBn ? "আপডেট সংরক্ষণ করুন" : "Save Changes") : (isBn ? "ডাক্তার সংরক্ষণ করুন" : "Save Doctor")}
                 </button>
               </div>
             </form>
@@ -2409,7 +2509,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
 
             <h3 className="font-bold text-base text-[#0E3A53] mb-1 flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-[#2D8FC1]" />
-              <span>{isBn ? "নতুন স্বাস্থ্য ব্লগ প্রকাশ করুন" : "Publish Health Article"}</span>
+              <span>{editingBlogId ? (isBn ? "ব্লগ সম্পাদনা করুন" : "Edit Health Article") : (isBn ? "নতুন স্বাস্থ্য ব্লগ প্রকাশ করুন" : "Publish Health Article")}</span>
             </h3>
 
             {blogFormError && (
@@ -2506,7 +2606,13 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                   className="px-5 py-2 rounded-xl bg-[#0E3A53] hover:bg-[#0A2A3D] text-white font-bold transition cursor-pointer flex items-center gap-2 disabled:opacity-60"
                 >
                   {isBlogSaving && <RefreshCw className="w-4 h-4 animate-spin" />}
-                  <span>{isBlogSaving ? (isBn ? "সার্ভারে সংরক্ষিত হচ্ছে..." : "Saving to Server...") : (isBn ? "ব্লগ প্রকাশ ও সার্ভারে সংরক্ষণ করুন" : "Publish & Save to Server")}</span>
+                  <span>
+                    {isBlogSaving 
+                      ? (isBn ? "সার্ভারে সংরক্ষিত হচ্ছে..." : "Saving to Server...") 
+                      : (editingBlogId 
+                        ? (isBn ? "আপডেট সংরক্ষণ করুন" : "Save Changes") 
+                        : (isBn ? "ব্লগ প্রকাশ ও সার্ভারে সংরক্ষণ করুন" : "Publish & Save to Server"))}
+                  </span>
                 </button>
               </div>
             </form>

@@ -173,7 +173,22 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 >
                   {isBn ? "স্টাফ আইডি" : "Staff ID"}
                 </button>
-
+                <span className="text-white/30">•</span>
+                <button
+                  onClick={() => handleNav('visual-designer')}
+                  className="hover:text-[#C9973B] transition cursor-pointer text-[11px] text-purple-300"
+                  title={isBn ? "ভিজ্যুয়াল ডিজাইনার লগইন" : "Visual Designer Portal Login"}
+                >
+                  {isBn ? "ভিজ্যুয়াল ডিজাইনার" : "Visual Designer"}
+                </button>
+                <span className="text-white/30">•</span>
+                <button
+                  onClick={() => handleNav('lab-specialist')}
+                  className="hover:text-[#C9973B] transition cursor-pointer text-[11px] text-teal-300"
+                  title={isBn ? "ল্যাব স্পেশালিস্ট লগইন" : "Lab Specialist Portal Login"}
+                >
+                  {isBn ? "ল্যাব স্পেশালিস্ট" : "Lab Specialist"}
+                </button>
               </div>
             </li>
           </ul>

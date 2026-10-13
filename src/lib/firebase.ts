@@ -933,3 +933,79 @@ export const saveSecurityCredentialsToFirestore = async (
     throw error;
   }
 };
+
+/* =========================================================================
+   PORTAL USERS TABLE / COLLECTION (VISUAL DESIGNER & LAB SPECIALIST)
+   Stored in Firestore Cloud Database 'portal_users'
+   ========================================================================= */
+export const PORTAL_USERS_COLLECTION = 'portal_users';
+
+export interface PortalUserCredential {
+  id: string; // 'visual_designer' | 'lab_specialist'
+  role: 'visual_designer' | 'lab_specialist';
+  username: string;
+  name: string;
+  password?: string;
+  passwordHash?: string;
+  salt?: string;
+  updatedAt: number;
+  lastLogin?: number;
+}
+
+export const subscribePortalUsers = (
+  onUpdate: (users: Record<string, PortalUserCredential>) => void,
+  onError?: (err: Error) => void
+) => {
+  try {
+    const colRef = collection(db, PORTAL_USERS_COLLECTION);
+    return onSnapshot(
+      colRef,
+      (snapshot) => {
+        const usersMap: Record<string, PortalUserCredential> = {};
+        snapshot.forEach((docSnap) => {
+          usersMap[docSnap.id] = {
+            id: docSnap.id,
+            ...(docSnap.data() as Omit<PortalUserCredential, 'id'>)
+          };
+        });
+        onUpdate(usersMap);
+      },
+      (error) => {
+        if (onError) onError(error);
+      }
+    );
+  } catch (error: any) {
+    if (onError) onError(error);
+    return () => {};
+  }
+};
+
+export const getPortalUserFromFirestore = async (id: string): Promise<PortalUserCredential | null> => {
+  try {
+    const docRef = doc(db, PORTAL_USERS_COLLECTION, id);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...(docSnap.data() as Omit<PortalUserCredential, 'id'>) };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+export const savePortalUserToFirestore = async (user: PortalUserCredential): Promise<void> => {
+  try {
+    const docRef = doc(db, PORTAL_USERS_COLLECTION, user.id);
+    const { id, ...data } = user;
+    const cleanData = cleanForFirestore({
+      ...data,
+      id: user.id,
+      updatedAt: Date.now()
+    });
+    await setDoc(docRef, cleanData, { merge: true });
+  } catch (error) {
+    console.error(`Error saving portal user ${user.id} to Firestore:`, error);
+    throw error;
+  }
+};
+

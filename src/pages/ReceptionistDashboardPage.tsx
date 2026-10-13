@@ -25,7 +25,8 @@ import {
   Stethoscope,
   Printer,
   Download,
-  Loader2
+  Loader2,
+  Receipt
 } from 'lucide-react';
 import { PageBanner } from '../components/PageBanner';
 import { useLanguage } from '../context/LanguageContext';
@@ -622,6 +623,16 @@ export const ReceptionistDashboardPage: React.FC<ReceptionistDashboardPageProps>
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
               <span>{isBn ? "অ্যাডমিন নিয়ন্ত্রিত পাসওয়ার্ড" : "Admin-Managed Password"}</span>
             </div>
+            {/* Receipt Generator Navigation Button */}
+            <button
+              onClick={() => onNavigate('receipt-generator')}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 shadow-sm transition cursor-pointer"
+              title={isBn ? "মানি রিসিট ও পরীক্ষা ফি জেনারেটরে যান" : "Go to Money Receipt & Fee Generator"}
+            >
+              <Receipt className="w-3.5 h-3.5 text-amber-200" />
+              <span>{isBn ? "রিসিট জেনারেটর" : "Receipt Generator"}</span>
+            </button>
+
             <button
               onClick={() => setIsAddModalOpen(true)}
               className="inline-flex items-center justify-center gap-2 bg-[#2D8FC1] hover:bg-[#23749D] text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm cursor-pointer"

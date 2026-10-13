@@ -18,7 +18,8 @@ import {
   createSecureSession,
   getActiveSession,
   destroySession,
-  LockoutStatus
+  LockoutStatus,
+  SecurityRole
 } from '../utils/security';
 import {
   subscribeAppointments,
@@ -55,7 +56,11 @@ import {
   subscribeSecurityCredentials,
   getSecurityCredentialsFromFirestore,
   saveSecurityCredentialsToFirestore,
-  SecurityCredentialsDoc
+  SecurityCredentialsDoc,
+  subscribePortalUsers,
+  savePortalUserToFirestore,
+  getPortalUserFromFirestore,
+  PortalUserCredential
 } from '../lib/firebase';
 
 export interface AppointmentRecord {
@@ -172,6 +177,7 @@ interface DataContextType {
   // Blogs
   blogs: BlogPost[];
   addBlog: (blog: Omit<BlogPost, 'id'>) => Promise<BlogPost>;
+  updateBlog: (id: string, updates: Partial<Omit<BlogPost, 'id'>>) => Promise<void>;
   removeBlog: (id: string) => void;
   resetBlogs: () => void;
 
@@ -233,6 +239,25 @@ interface DataContextType {
   logoutAdmin: () => void;
   loginReceptionist: (user: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   logoutReceptionist: () => void;
+
+  // Portal Users Auth (Visual Designer & Lab Specialist)
+  isVisualDesignerLoggedIn: boolean;
+  visualDesignerUsername: string;
+  loginVisualDesigner: (user: string, pass: string) => Promise<{ success: boolean; error?: string }>;
+  logoutVisualDesigner: () => void;
+
+  isLabSpecialistLoggedIn: boolean;
+  labSpecialistUsername: string;
+  loginLabSpecialist: (user: string, pass: string) => Promise<{ success: boolean; error?: string }>;
+  logoutLabSpecialist: () => void;
+
+  portalUsers: Record<string, PortalUserCredential>;
+  updatePortalUserCredentials: (
+    role: 'visual_designer' | 'lab_specialist',
+    newUsername: string,
+    newPassword?: string
+  ) => Promise<{ success: boolean; message: string }>;
+
   changePassword: (
     role: 'admin' | 'receptionist',
     newPass: string,
@@ -244,7 +269,7 @@ interface DataContextType {
     newPassword?: string,
     currentPass?: string
   ) => Promise<{ success: boolean; message: string }>;
-  checkLockoutStatus: (role: 'admin' | 'receptionist') => LockoutStatus;
+  checkLockoutStatus: (role: SecurityRole) => LockoutStatus;
   isFirebaseConnected: boolean;
   syncAllToFirestore: () => Promise<{ success: boolean; message: string }>;
 }
@@ -550,6 +575,85 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
+  // Portal Users State (visual_designer, lab_specialist)
+  const [portalUsers, setPortalUsers] = useState<Record<string, PortalUserCredential>>(() => {
+    try {
+      const saved = localStorage.getItem('amc_portal_users_v1');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const [isVisualDesignerLoggedIn, setIsVisualDesignerLoggedIn] = useState<boolean>(() => {
+    return getActiveSession('visual_designer') !== null;
+  });
+
+  const [isLabSpecialistLoggedIn, setIsLabSpecialistLoggedIn] = useState<boolean>(() => {
+    return getActiveSession('lab_specialist') !== null;
+  });
+
+  // Sync portal users with Firebase Firestore collection 'portal_users'
+  useEffect(() => {
+    let isMounted = true;
+
+    const initPortalUsers = async () => {
+      try {
+        const designerSalt = generateSalt();
+        const labSalt = generateSalt();
+        const defaultDesigner: PortalUserCredential = {
+          id: 'visual_designer',
+          role: 'visual_designer',
+          name: 'Visual Designer',
+          username: 'designer',
+          password: 'designer123',
+          passwordHash: await hashPassword('designer123', designerSalt),
+          salt: designerSalt,
+          updatedAt: Date.now()
+        };
+
+        const defaultLab: PortalUserCredential = {
+          id: 'lab_specialist',
+          role: 'lab_specialist',
+          name: 'Lab Specialist',
+          username: 'labspecialist',
+          password: 'lab123',
+          passwordHash: await hashPassword('lab123', labSalt),
+          salt: labSalt,
+          updatedAt: Date.now()
+        };
+
+        // Check if designer exists in Firestore
+        const existingDesigner = await getPortalUserFromFirestore('visual_designer');
+        if (!existingDesigner) {
+          await savePortalUserToFirestore(defaultDesigner);
+        }
+
+        // Check if lab specialist exists in Firestore
+        const existingLab = await getPortalUserFromFirestore('lab_specialist');
+        if (!existingLab) {
+          await savePortalUserToFirestore(defaultLab);
+        }
+      } catch (err) {
+        console.warn('Portal users initial sync warning:', err);
+      }
+    };
+
+    initPortalUsers();
+
+    const unsubPortalUsers = subscribePortalUsers((cloudUsers) => {
+      if (isMounted && cloudUsers) {
+        setPortalUsers(cloudUsers);
+        localStorage.setItem('amc_portal_users_v1', JSON.stringify(cloudUsers));
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      if (typeof unsubPortalUsers === 'function') unsubPortalUsers();
+    };
+  }, []);
+
   // Periodic session integrity & expiration check
   useEffect(() => {
     const interval = setInterval(() => {
@@ -561,9 +665,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (isReceptionistLoggedIn !== receptionActive) {
         setIsReceptionistLoggedIn(receptionActive);
       }
+      const designerActive = getActiveSession('visual_designer') !== null;
+      if (isVisualDesignerLoggedIn !== designerActive) {
+        setIsVisualDesignerLoggedIn(designerActive);
+      }
+      const labActive = getActiveSession('lab_specialist') !== null;
+      if (isLabSpecialistLoggedIn !== labActive) {
+        setIsLabSpecialistLoggedIn(labActive);
+      }
     }, 15000);
     return () => clearInterval(interval);
-  }, [isAdminLoggedIn, isReceptionistLoggedIn]);
+  }, [isAdminLoggedIn, isReceptionistLoggedIn, isVisualDesignerLoggedIn, isLabSpecialistLoggedIn]);
 
   // Persist handlers
   useEffect(() => {
@@ -735,6 +847,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw err;
     }
     return newBlog;
+  };
+
+  const updateBlog = async (id: string, updated: Partial<Omit<BlogPost, 'id'>>): Promise<void> => {
+    setBlogs(prev =>
+      prev.map(b => {
+        if (b.id === id) {
+          const merged = { ...b, ...updated };
+          saveBlogToFirestore(merged).catch(err => {
+            console.warn('Firestore blog update warning:', err);
+          });
+          return merged;
+        }
+        return b;
+      })
+    );
   };
 
   const removeBlog = (id: string) => {
@@ -1224,6 +1351,153 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsReceptionistLoggedIn(false);
   };
 
+  const loginVisualDesigner = async (user: string, pass: string): Promise<{ success: boolean; error?: string }> => {
+    const cleanUser = sanitizeInput(user).trim().toLowerCase();
+    const cleanPass = pass.trim();
+
+    const lock = checkLockoutStatus('visual_designer');
+    if (lock.isLocked) {
+      return {
+        success: false,
+        error: `অ্যাকাউন্ট সাময়িকভাবে লক হয়েছে! অনুগ্রহ করে ${lock.remainingSeconds} সেকেন্ড অপেক্ষা করুন।`
+      };
+    }
+
+    const designerCred = portalUsers['visual_designer'] || {
+      username: 'designer',
+      password: 'designer123'
+    };
+
+    const isUserValid = cleanUser === designerCred.username.toLowerCase();
+    let isPassValid = false;
+    if (designerCred.passwordHash) {
+      isPassValid = await verifyPassword(cleanPass, designerCred.passwordHash, designerCred.salt);
+    }
+    if (!isPassValid && designerCred.password) {
+      isPassValid = cleanPass === designerCred.password;
+    }
+    if (!isPassValid && !designerCred.passwordHash) {
+      isPassValid = cleanPass === 'designer123';
+    }
+
+    if (isUserValid && isPassValid) {
+      clearLockout('visual_designer');
+      createSecureSession('visual_designer', cleanUser);
+      setIsVisualDesignerLoggedIn(true);
+      return { success: true };
+    } else {
+      const newLock = recordFailedAttempt('visual_designer');
+      return {
+        success: false,
+        error: newLock.isLocked
+          ? `ভুল চেষ্টা! অ্যাকাউন্ট ৫ মিনিটের জন্য লক করা হয়েছে।`
+          : `ভুল ইউজারনেম বা পাসওয়ার্ড! অবশিষ্ট চেষ্টা: ${newLock.attemptsLeft} বার।`
+      };
+    }
+  };
+
+  const logoutVisualDesigner = () => {
+    destroySession('visual_designer');
+    setIsVisualDesignerLoggedIn(false);
+  };
+
+  const loginLabSpecialist = async (user: string, pass: string): Promise<{ success: boolean; error?: string }> => {
+    const cleanUser = sanitizeInput(user).trim().toLowerCase();
+    const cleanPass = pass.trim();
+
+    const lock = checkLockoutStatus('lab_specialist');
+    if (lock.isLocked) {
+      return {
+        success: false,
+        error: `অ্যাকাউন্ট সাময়িকভাবে লক হয়েছে! অনুগ্রহ করে ${lock.remainingSeconds} সেকেন্ড অপেক্ষা করুন।`
+      };
+    }
+
+    const labCred = portalUsers['lab_specialist'] || {
+      username: 'labspecialist',
+      password: 'lab123'
+    };
+
+    const isUserValid = cleanUser === labCred.username.toLowerCase() || cleanUser === 'lab';
+    let isPassValid = false;
+    if (labCred.passwordHash) {
+      isPassValid = await verifyPassword(cleanPass, labCred.passwordHash, labCred.salt);
+    }
+    if (!isPassValid && labCred.password) {
+      isPassValid = cleanPass === labCred.password;
+    }
+    if (!isPassValid && !labCred.passwordHash) {
+      isPassValid = cleanPass === 'lab123';
+    }
+
+    if (isUserValid && isPassValid) {
+      clearLockout('lab_specialist');
+      createSecureSession('lab_specialist', cleanUser);
+      setIsLabSpecialistLoggedIn(true);
+      return { success: true };
+    } else {
+      const newLock = recordFailedAttempt('lab_specialist');
+      return {
+        success: false,
+        error: newLock.isLocked
+          ? `ভুল চেষ্টা! অ্যাকাউন্ট ৫ মিনিটের জন্য লক করা হয়েছে।`
+          : `ভুল ইউজারনেম বা পাসওয়ার্ড! অবশিষ্ট চেষ্টা: ${newLock.attemptsLeft} বার।`
+      };
+    }
+  };
+
+  const logoutLabSpecialist = () => {
+    destroySession('lab_specialist');
+    setIsLabSpecialistLoggedIn(false);
+  };
+
+  const updatePortalUserCredentials = async (
+    role: 'visual_designer' | 'lab_specialist',
+    newUsername: string,
+    newPassword?: string
+  ): Promise<{ success: boolean; message: string }> => {
+    const cleanUsername = sanitizeInput(newUsername).trim();
+    if (!cleanUsername || cleanUsername.length < 3) {
+      return { success: false, message: 'ইউজারনেম কমপক্ষে ৩ অক্ষরের হতে হবে।' };
+    }
+
+    try {
+      const current = portalUsers[role] || {
+        id: role,
+        role: role,
+        name: role === 'visual_designer' ? 'Visual Designer' : 'Lab Specialist',
+        username: role === 'visual_designer' ? 'designer' : 'labspecialist',
+        updatedAt: Date.now()
+      };
+
+      const salt = generateSalt();
+      const updatedUser: PortalUserCredential = {
+        ...current,
+        id: role,
+        role: role,
+        username: cleanUsername,
+        updatedAt: Date.now()
+      };
+
+      if (newPassword) {
+        updatedUser.salt = salt;
+        updatedUser.passwordHash = await hashPassword(newPassword, salt);
+        updatedUser.password = newPassword;
+      }
+
+      await savePortalUserToFirestore(updatedUser);
+      setPortalUsers(prev => ({ ...prev, [role]: updatedUser }));
+      localStorage.setItem('amc_portal_users_v1', JSON.stringify({ ...portalUsers, [role]: updatedUser }));
+
+      return {
+        success: true,
+        message: `${role === 'visual_designer' ? 'ভিজ্যুয়াল ডিজাইনার' : 'ল্যাব স্পেশালিস্ট'} এর ক্রেডেনশিয়াল ডেটাবেজে সংরক্ষিত হয়েছে!`
+      };
+    } catch (err: any) {
+      return { success: false, message: 'সংরক্ষণ ব্যর্থ হয়েছে: ' + (err?.message || '') };
+    }
+  };
+
   /**
    * Super Admin Only: Update Username and/or Password directly in Cloud Firestore Database
    * Passwords are NEVER stored in plaintext. They are cryptographically hashed using Salted SHA-256 + Pepper.
@@ -1404,6 +1678,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         resetNotices,
         blogs,
         addBlog,
+        updateBlog,
         removeBlog,
         resetBlogs,
         appointments,
@@ -1439,6 +1714,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logoutAdmin,
         loginReceptionist,
         logoutReceptionist,
+        isVisualDesignerLoggedIn,
+        visualDesignerUsername: portalUsers['visual_designer']?.username || 'designer',
+        loginVisualDesigner,
+        logoutVisualDesigner,
+        isLabSpecialistLoggedIn,
+        labSpecialistUsername: portalUsers['lab_specialist']?.username || 'labspecialist',
+        loginLabSpecialist,
+        logoutLabSpecialist,
+        portalUsers,
+        updatePortalUserCredentials,
         adminUsername: securityCreds?.admin?.username || 'admin',
         receptionistUsername: securityCreds?.receptionist?.username || 'reception',
         isSecuritySyncedToCloud,
