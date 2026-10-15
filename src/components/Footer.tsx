@@ -46,7 +46,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           {/* Official Facebook Page Button */}
           <div className="mt-4 pt-3.5 border-t border-white/10">
             <a
-              href="https://www.facebook.com/anowaramedicalcomplex01/"
+              href="https://www.facebook.com/anowara.hospital"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 bg-[#1877F2] hover:bg-[#166FE5] text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-md transition-all transform hover:-translate-y-0.5"
@@ -238,7 +238,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             </li>
             <li>
               <a
-                href="https://www.facebook.com/anowaramedicalcomplex01/"
+                href="https://www.facebook.com/anowara.hospital"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-white/80 hover:text-[#1877F2] transition flex items-center gap-2 group"

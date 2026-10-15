@@ -24,6 +24,7 @@ import {
   Database
 } from 'lucide-react';
 import { PageBanner } from '../components/PageBanner';
+import { VisitingCardDesigner } from '../components/VisitingCardDesigner';
 import { useLanguage } from '../context/LanguageContext';
 import { useData } from '../context/DataContext';
 
@@ -350,61 +351,7 @@ export const VisualDesignerPage: React.FC<VisualDesignerPageProps> = ({
           </div>
         </div>
 
-        {/* =========================================================================
-            USER DEV CODE CONTAINER / WORKSPACE
-            The user can directly inject or mount their custom HTML / React / JS code here
-            ========================================================================= */}
-        <div className="bg-white rounded-3xl border-2 border-purple-200/80 shadow-md p-6 space-y-4">
-          <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-purple-600" />
-              <h4 className="font-bold text-sm sm:text-base text-[#0E3A53]">
-                {isBn ? "ভিজ্যুয়াল ডিজাইনার কন্টেন্ট ও ডেভ ওয়ার্কস্পেস" : "Visual Designer Dev Workspace"}
-              </h4>
-            </div>
-            <span className="text-[11px] bg-purple-50 text-purple-700 px-3 py-1 rounded-full font-mono font-semibold border border-purple-200">
-              #visual-designer-dev-workspace
-            </span>
-          </div>
-
-          <p className="text-xs text-gray-600">
-            {isBn 
-              ? "এই সেকশনের নিচে আপনার ডেভ কোড (HTML/JSX উপাদান) সরাসরি যোগ করতে পারবেন। সমস্ত প্যারেন্ট সিএসএস ও রেসপনসিভ লেআউট কনফিগার করা আছে।"
-              : "You can place all your functional design components and custom HTML in the dedicated dev container below."}
-          </p>
-
-          {/* DEDICATED DEV DIV: Targeted for user's custom functional development */}
-          <div 
-            id="amc-visual-designer-dev-container" 
-            className="min-h-[420px] rounded-2xl border-2 border-dashed border-purple-300 bg-purple-50/30 p-6 relative"
-          >
-            {/* User Dev Placeholder Area */}
-            <div className="flex flex-col items-center justify-center text-center py-12 px-4 space-y-3">
-              <div className="w-16 h-16 rounded-3xl bg-white text-purple-600 flex items-center justify-center shadow-sm border border-purple-100">
-                <Palette className="w-8 h-8" />
-              </div>
-              <h4 className="font-bold text-base text-[#0E3A53]">
-                {isBn ? "ভিজ্যুয়াল ডিজাইনার ডেভ কন্টেইনার প্রস্তুত" : "Visual Designer Dev Container Ready"}
-              </h4>
-              <p className="text-xs text-gray-500 max-w-lg">
-                {isBn 
-                  ? "আপনি যে ফাংশনাল কোডগুলো যোগ করতে চান, তা এই `amc-visual-designer-dev-container` ডিভের মধ্যে সংযুক্ত করুন। ফায়ারবেস টেবিল এবং লগইন সিকিউরিটি ইতিমধ্যেই সম্পূর্ণ কার্যকর রয়েছে।"
-                  : "All database credentials and login restrictions are active. You can safely embed your functional visual editor and design modules here."}
-              </p>
-              <div className="flex flex-wrap gap-2 justify-center pt-2">
-                <span className="px-3 py-1 bg-white text-gray-700 text-[11px] rounded-xl border border-gray-200 font-medium">
-                  🎨 Canvas / Asset Editor
-                </span>
-                <span className="px-3 py-1 bg-white text-gray-700 text-[11px] rounded-xl border border-gray-200 font-medium">
-                  🖼️ Gallery Banners
-                </span>
-                <span className="px-3 py-1 bg-white text-gray-700 text-[11px] rounded-xl border border-gray-200 font-medium">
-                  🪪 Print Themes
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <VisitingCardDesigner />
 
         {/* Change Credentials Modal */}
         {isCredModalOpen && (

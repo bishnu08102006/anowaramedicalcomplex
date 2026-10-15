@@ -154,7 +154,7 @@ export const ContactPage: React.FC<ContactPageProps> = ({ onNavigateHome, onNavi
               </p>
             </div>
             <a
-              href="https://www.facebook.com/anowaramedicalcomplex01/"
+              href="https://www.facebook.com/anowara.hospital"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 bg-[#1877F2] hover:bg-[#166FE5] text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow transition self-stretch text-center"

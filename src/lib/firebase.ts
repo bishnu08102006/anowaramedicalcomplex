@@ -23,6 +23,7 @@ import { StaffMember } from '../data/staff';
 import { GalleryItem } from '../data/gallery';
 import { ManagementMember } from '../data/management';
 import { DiagnosticTest } from '../data/tests';
+import { LabGeneratedReport, LabPatientRecord } from '../types/labReports';
 
 // Web app's Firebase configuration provided by Firebase Console
 const firebaseConfig = {
@@ -605,6 +606,98 @@ export const deleteDiagnosticTestFromFirestore = async (id: string): Promise<voi
 };
 
 /* =========================================================================
+   LAB PATIENT RECORDS & GENERATED REPORTS (REAL-TIME SYNC)
+   ========================================================================= */
+const LAB_PATIENT_RECORDS_COLLECTION = 'lab_patient_records';
+const LAB_GENERATED_REPORTS_COLLECTION = 'lab_generated_reports';
+
+export const subscribeLabPatientRecords = (
+  onUpdate: (records: LabPatientRecord[]) => void,
+  onError?: (err: Error) => void
+) => {
+  try {
+    return onSnapshot(
+      collection(db, LAB_PATIENT_RECORDS_COLLECTION),
+      (snapshot) => {
+        const records = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...(docSnap.data() as Omit<LabPatientRecord, 'id'>)
+        }));
+        records.sort((a, b) => (b.registrationDate || '').localeCompare(a.registrationDate || ''));
+        onUpdate(records);
+      },
+      (error) => {
+        console.error('Firestore lab patient records subscription error:', error);
+        onError?.(error);
+      }
+    );
+  } catch (error) {
+    console.error('Failed to subscribe to lab patient records:', error);
+    onError?.(error instanceof Error ? error : new Error(String(error)));
+    return () => {};
+  }
+};
+
+export const subscribeLabGeneratedReports = (
+  onUpdate: (reports: LabGeneratedReport[]) => void,
+  onError?: (err: Error) => void
+) => {
+  try {
+    return onSnapshot(
+      collection(db, LAB_GENERATED_REPORTS_COLLECTION),
+      (snapshot) => {
+        const reports = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...(docSnap.data() as Omit<LabGeneratedReport, 'id'>)
+        }));
+        reports.sort((a, b) => (b.generatedAt || '').localeCompare(a.generatedAt || ''));
+        onUpdate(reports);
+      },
+      (error) => {
+        console.error('Firestore generated lab reports subscription error:', error);
+        onError?.(error);
+      }
+    );
+  } catch (error) {
+    console.error('Failed to subscribe to generated lab reports:', error);
+    onError?.(error instanceof Error ? error : new Error(String(error)));
+    return () => {};
+  }
+};
+
+export const saveLabPatientRecord = async (
+  record: Omit<LabPatientRecord, 'id' | 'updatedAt'> & { id?: string; updatedAt?: string },
+  reports: Array<Omit<LabGeneratedReport, 'id' | 'patientRecordId'>> = []
+): Promise<string> => {
+  try {
+    const patientRef = record.id
+      ? doc(db, LAB_PATIENT_RECORDS_COLLECTION, record.id)
+      : doc(collection(db, LAB_PATIENT_RECORDS_COLLECTION));
+    const batch = writeBatch(db);
+
+    batch.set(patientRef, cleanForFirestore({
+      ...record,
+      id: patientRef.id,
+      updatedAt: new Date().toISOString()
+    }), { merge: true });
+
+    reports.forEach((report) => {
+      const reportRef = doc(collection(db, LAB_GENERATED_REPORTS_COLLECTION));
+      batch.set(reportRef, cleanForFirestore({
+        ...report,
+        patientRecordId: patientRef.id
+      }));
+    });
+
+    await batch.commit();
+    return patientRef.id;
+  } catch (error) {
+    console.error('Error saving lab patient record and reports to Firestore:', error);
+    throw error;
+  }
+};
+
+/* =========================================================================
    EMERGENCY NOTICE / HEADER MARQUEE TICKER HELPERS (REAL-TIME CLOUD FIRESTORE)
    Stored directly in 'notices/emergency-header-ticker' and 'emergency_ticker/live_ticker'
    ========================================================================= */
@@ -1008,4 +1101,3 @@ export const savePortalUserToFirestore = async (user: PortalUserCredential): Pro
     throw error;
   }
 };
-

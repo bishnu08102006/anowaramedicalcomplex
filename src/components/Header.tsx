@@ -45,7 +45,8 @@ export type PageId =
   | 'install'
   | 'visual-designer'
   | 'lab-specialist'
-  | 'receipt-generator';
+  | 'receipt-generator'
+  | 'billing-system';
 
 interface HeaderProps {
   currentPage: PageId;
@@ -508,7 +509,7 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
             </div>
 
             <a
-              href="https://www.facebook.com/anowaramedicalcomplex01/"
+              href="https://www.facebook.com/anowara.hospital"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 bg-[#1877F2] hover:bg-[#166FE5] text-white py-2 rounded-xl font-semibold text-xs shadow-xs transition"
@@ -533,4 +534,3 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
     </header>
   );
 };
-

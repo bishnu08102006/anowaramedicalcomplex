@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
-import { DataProvider } from './context/DataContext';
+import { DataProvider, useData } from './context/DataContext';
 import { Header, PageId } from './components/Header';
 import { NoticeMarquee } from './components/NoticeMarquee';
 import { Footer } from './components/Footer';
@@ -27,6 +27,7 @@ import { InstallPage } from './pages/InstallPage';
 import { VisualDesignerPage } from './pages/VisualDesignerPage';
 import { LabSpecialistPage } from './pages/LabSpecialistPage';
 import { ReceiptGeneratorPage } from './pages/ReceiptGeneratorPage';
+import { BillingSystemWorkspace } from './components/BillingSystemWorkspace';
 
 function parseLocationToPage(): PageId {
   if (typeof window !== 'undefined') {
@@ -44,7 +45,8 @@ function parseLocationToPage(): PageId {
       if (pageParam === 'visual-designer' || pageParam === 'visualdesigner' || pageParam === 'designer') return 'visual-designer';
       if (pageParam === 'lab-specialist' || pageParam === 'labspecialist' || pageParam === 'lab') return 'lab-specialist';
       if (pageParam === 'receipt-generator' || pageParam === 'receiptgenerator' || pageParam === 'receipt' || pageParam === 'money-receipt') return 'receipt-generator';
-      if (['doctors', 'diagnostics', 'services', 'management', 'gallery', 'appointment', 'blog', 'notices', 'receptionist', 'admin', 'contact', 'verify-staff', 'install', 'visual-designer', 'lab-specialist', 'receipt-generator'].includes(pageParam)) {
+      if (pageParam === 'billing-system' || pageParam === 'billingsystem' || pageParam === 'billing') return 'billing-system';
+      if (['doctors', 'diagnostics', 'services', 'management', 'gallery', 'appointment', 'blog', 'notices', 'receptionist', 'admin', 'contact', 'verify-staff', 'install', 'visual-designer', 'lab-specialist', 'receipt-generator', 'billing-system'].includes(pageParam)) {
         return pageParam as PageId;
       }
     }
@@ -58,6 +60,9 @@ function parseLocationToPage(): PageId {
     }
     if (fullHref.includes('lab-specialist') || fullHref.includes('labspecialist')) {
       return 'lab-specialist';
+    }
+    if (fullHref.includes('billing-system') || fullHref.includes('billingsystem')) {
+      return 'billing-system';
     }
     if (fullHref.includes('receipt-generator') || fullHref.includes('receiptgenerator') || fullHref.includes('/receipt.')) {
       return 'receipt-generator';
@@ -138,6 +143,10 @@ function parseLocationToPage(): PageId {
         case 'receipt':
         case 'money-receipt':
           return 'receipt-generator';
+        case 'billing-system':
+        case 'billingsystem':
+        case 'billing':
+          return 'billing-system';
       }
     }
 
@@ -206,6 +215,10 @@ function parseLocationToPage(): PageId {
         case 'labspecialist':
         case 'lab':
           return 'lab-specialist';
+        case 'billing-system':
+        case 'billingsystem':
+        case 'billing':
+          return 'billing-system';
         case 'receipt-generator':
         case 'receiptgenerator':
         case 'receipt':
@@ -332,11 +345,18 @@ const PAGE_SEO: Record<PageId, { titleBn: string; titleEn: string; descBn: strin
     titleEn: "Money Receipt Generator & Billing | Anowara Medical Complex",
     descBn: "রোগীদের ডায়াগনস্টিক পরীক্ষার ফি ও চিকিৎসা সেবার ডিজিটাল মানি রিসিট প্রিন্ট ও জেনারেট করুন।",
     descEn: "Generate and print patient diagnostic test fee money receipts and bills."
+  },
+  'billing-system': {
+    titleBn: "বিলিং সিস্টেম | আনোয়ারা মেডিকেল কমপ্লেক্স",
+    titleEn: "Billing System | Anowara Medical Complex",
+    descBn: "আনোয়ারা মেডিকেল কমপ্লেক্সের বিলিং সিস্টেম।",
+    descEn: "Anowara Medical Complex billing system."
   }
 };
 
 function MainApp() {
   const { isBn } = useLanguage();
+  const { isLabSpecialistLoggedIn } = useData();
   const [currentPage, setCurrentPage] = useState<PageId>(() => {
     return parseLocationToPage();
   });
@@ -420,16 +440,20 @@ function MainApp() {
     navigateTo('appointment');
   };
 
+  const isStandaloneLabWorkspace = currentPage === 'lab-specialist' && isLabSpecialistLoggedIn;
+  const isStandaloneBillingWorkspace = currentPage === 'billing-system';
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#F6F8F7] text-[#132A33] selection:bg-[#2D8FC1] selection:text-white">
+    <div className={isStandaloneBillingWorkspace ? 'h-screen w-full overflow-hidden bg-white' : isStandaloneLabWorkspace ? 'min-h-screen bg-white' : 'min-h-screen flex flex-col bg-[#F6F8F7] text-[#132A33] selection:bg-[#2D8FC1] selection:text-white'}>
       {/* 1. Top Emergency Notice Marquee */}
-      <NoticeMarquee onNavigateToNotices={() => navigateTo('notices')} />
+      {!isStandaloneLabWorkspace && !isStandaloneBillingWorkspace && <NoticeMarquee onNavigateToNotices={() => navigateTo('notices')} />}
 
       {/* 2. Main Navigation Header with Language Switcher */}
-      <Header currentPage={currentPage} onNavigate={navigateTo} />
+      {!isStandaloneLabWorkspace && !isStandaloneBillingWorkspace && <Header currentPage={currentPage} onNavigate={navigateTo} />}
 
       {/* 3. Dedicated Page Routing */}
-      <main className="flex-1">
+      <main className={isStandaloneBillingWorkspace ? 'h-screen w-full' : 'flex-1'}>
+        {isStandaloneBillingWorkspace && <BillingSystemWorkspace />}
         {currentPage === 'home' && (
           <HomePage
             onNavigate={navigateTo}
@@ -566,14 +590,15 @@ function MainApp() {
       </main>
 
       {/* 4. Global Footer with Language & Page Links */}
-      <Footer onNavigate={navigateTo} />
+      {!isStandaloneLabWorkspace && !isStandaloneBillingWorkspace && <Footer onNavigate={navigateTo} />}
 
       {/* 5. Floating Quick Action & Emergency Dial - Hidden on Admin, Receptionist, Specialist, and Receipt dashboards so it does not block tables/forms */}
       {currentPage !== 'admin' &&
         currentPage !== 'receptionist' &&
         currentPage !== 'visual-designer' &&
         currentPage !== 'lab-specialist' &&
-        currentPage !== 'receipt-generator' && (
+        currentPage !== 'receipt-generator' &&
+        currentPage !== 'billing-system' && (
         <>
           <FloatingEmergencyButton onNavigate={navigateTo} />
           <HospitalAiChatbot onNavigate={navigateTo} />

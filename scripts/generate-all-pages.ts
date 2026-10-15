@@ -339,7 +339,7 @@ function getCrawlableContentForPage(key: string, page: any): string {
 }
 
 function injectCrawlableRoot(html: string, key: string, cfg: (typeof PAGES_SEO)[string]): string {
-  if (key === 'home') return html;
+  if (key === 'home' || key === 'billing-system') return html;
   const crawlableBody = getCrawlableContentForPage(key, cfg);
   return html.replace(/<div id="root"><\/div>/, crawlableBody);
 }
@@ -412,6 +412,7 @@ Disallow: /receptionist
 Disallow: /visual-designer
 Disallow: /lab-specialist
 Disallow: /receipt-generator
+Disallow: /billing-system
 
 User-agent: Googlebot
 Allow: /
@@ -420,6 +421,7 @@ Disallow: /receptionist
 Disallow: /visual-designer
 Disallow: /lab-specialist
 Disallow: /receipt-generator
+Disallow: /billing-system
 
 User-agent: Bingbot
 Allow: /
@@ -428,6 +430,7 @@ Disallow: /receptionist
 Disallow: /visual-designer
 Disallow: /lab-specialist
 Disallow: /receipt-generator
+Disallow: /billing-system
 
 Host: https://anowaramedicalcomplex.com
 Sitemap: https://anowaramedicalcomplex.com/sitemap.xml

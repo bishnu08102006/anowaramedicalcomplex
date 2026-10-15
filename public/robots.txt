@@ -5,6 +5,7 @@ Disallow: /receptionist
 Disallow: /visual-designer
 Disallow: /lab-specialist
 Disallow: /receipt-generator
+Disallow: /billing-system
 
 User-agent: Googlebot
 Allow: /
@@ -13,6 +14,7 @@ Disallow: /receptionist
 Disallow: /visual-designer
 Disallow: /lab-specialist
 Disallow: /receipt-generator
+Disallow: /billing-system
 
 User-agent: Bingbot
 Allow: /
@@ -21,6 +23,7 @@ Disallow: /receptionist
 Disallow: /visual-designer
 Disallow: /lab-specialist
 Disallow: /receipt-generator
+Disallow: /billing-system
 
 Host: https://anowaramedicalcomplex.com
 Sitemap: https://anowaramedicalcomplex.com/sitemap.xml

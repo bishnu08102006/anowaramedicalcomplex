@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-[#f2f6f5]">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anowara Medical Complex - Billing System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root { --teal: #0f766e; --teal-dark: #115e59; --ink: #12302c; }
+        @page { size: A5 portrait; margin: 8mm; }
+        body { font-family: 'Inter', sans-serif; }
+        body.auth-lock > header, body.auth-lock > main { visibility: hidden; }
+        .ic { width: 1.25em; height: 1.25em; flex: none; display: inline-block; vertical-align: -0.22em; }
+        .font-mono-receipt { font-family: 'Courier Prime', monospace; }
+
+        /* ---------- Simple, big, friendly controls (screen only) ---------- */
+        .card { background: #fff; border-radius: 24px; padding: 24px; box-shadow: 0 1px 2px rgba(18,48,44,.06), 0 8px 24px -12px rgba(18,48,44,.12); }
+        .step { width: 36px; height: 36px; border-radius: 999px; background: var(--teal); color: #fff; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+        .lbl { display: block; font-size: 14px; font-weight: 600; color: #3b5450; margin-bottom: 6px; }
+        .field { width: 100%; padding: 13px 14px; font-size: 16px; font-weight: 500; color: var(--ink); background: #f7faf9; border: 2px solid #e0e9e7; border-radius: 14px; outline: none; transition: border-color .15s, background .15s, box-shadow .15s; }
+        .field:focus { background: #fff; border-color: var(--teal); box-shadow: 0 0 0 4px rgba(15,118,110,.14); }
+        .chip { padding: 10px 16px; font-size: 15px; font-weight: 700; color: var(--ink); background: #fff; border: 2px solid #e0e9e7; border-radius: 999px; transition: all .15s; }
+        .chip:hover { border-color: var(--teal); background: #f0fdfa; }
+        .chip:active { transform: scale(.97); }
+        .btn-green { background: #059669; color: #fff; font-weight: 700; border-radius: 12px; transition: background .15s; }
+        .btn-green:hover { background: #047857; }
+        .btn-main { width: 100%; padding: 20px; font-size: 20px; font-weight: 800; color: #fff; background: var(--teal); border-radius: 20px; box-shadow: 0 10px 24px -10px rgba(15,118,110,.7); transition: background .15s, transform .1s; display: flex; align-items: center; justify-content: center; gap: 12px; }
+        .btn-main:hover { background: var(--teal-dark); }
+        .btn-main:active { transform: scale(.99); }
+        .btn-soft { padding: 13px 20px; font-size: 15px; font-weight: 700; color: var(--teal); background: #ecfdf9; border-radius: 14px; transition: background .15s; }
+        .btn-soft:hover { background: #d5f7ef; }
+        .tab { padding: 12px 22px; font-size: 16px; font-weight: 700; color: #3b5450; border-radius: 999px; transition: all .15s; display: inline-flex; align-items: center; gap: 10px; }
+        .tab:hover { background: #e6efed; }
+        .tab.on { background: var(--teal); color: #fff; box-shadow: 0 6px 16px -8px rgba(15,118,110,.8); }
+        .sum { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; font-size: 16px; color: #3b5450; font-weight: 600; }
+        .pill-select { padding: 10px 12px; font-size: 15px; font-weight: 700; color: var(--ink); background: #f7faf9; border: 2px solid #e0e9e7; border-radius: 12px; outline: none; }
+        input:focus-visible, button:focus-visible, select:focus-visible, summary:focus-visible { outline: 3px solid rgba(15,118,110,.45); outline-offset: 2px; }
+        details > summary { list-style: none; cursor: pointer; }
+        details > summary::-webkit-details-marker { display: none; }
+        details[open] .chev { transform: rotate(180deg); }
+
+        @media print {
+            @page { size: A4 portrait; margin: 8mm; }
+            html, body { background: #fff !important; }
+            body * { visibility: hidden; }
+            #receipt-print-box, #receipt-print-box * { visibility: visible; }
+            #receipt-print-box {
+                position: absolute; left: 0; top: 0; width: 100% !important; max-width: none !important; margin: 0; padding: 10mm 12mm;
+                background: white !important; box-shadow: none !important; border: none !important; border-radius: 0 !important;
+                -webkit-print-color-adjust: exact; print-color-adjust: exact;
+            }
+            .preview-col {
+                position: static !important; overflow: visible !important; max-height: none !important; display: block !important;
+                background: transparent !important; padding: 0 !important; border-radius: 0 !important;
+            }
+            .no-print { display: none !important; }
+        }
+        @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 antialiased auth-lock">
+
+    <section id="auth-gate" class="fixed inset-0 z-[100] flex items-center justify-center bg-[#f2f6f5] p-4 no-print">
+        <form id="login-form" onsubmit="signIn(event)" class="card w-full max-w-md space-y-4">
+            <div>
+                <h1 class="text-2xl font-extrabold" style="color: var(--ink)">Anowara Medical Complex</h1>
+                <p class="text-slate-500 mt-1">Sign in to access synced billing data.</p>
+            </div>
+            <div>
+                <label class="lbl" for="auth-email">Email</label>
+                <input type="email" id="auth-email" autocomplete="username" required class="field">
+            </div>
+            <div>
+                <label class="lbl" for="auth-password">Password</label>
+                <input type="password" id="auth-password" autocomplete="current-password" required class="field">
+            </div>
+            <button type="button" onclick="resetPassword()" class="text-sm font-bold text-teal-700 hover:text-teal-900">Forgot password?</button>
+            <p id="auth-error" class="hidden text-sm font-semibold text-rose-700" role="alert"></p>
+            <p id="auth-info" class="hidden text-sm font-semibold text-emerald-700" role="status"></p>
+            <button id="auth-submit" type="submit" class="btn-main !py-4 !text-base">Sign in</button>
+        </form>
+    </section>
+
+    <!-- TOP BAR -->
+    <header class="bg-white border-b border-slate-200 no-print">
+        <div class="max-w-[1500px] mx-auto px-5 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <h1 class="text-xl font-extrabold leading-tight" style="color: var(--ink)">Anowara Medical Complex</h1>
+                <p class="text-sm text-slate-500">Billing</p>
+            </div>
+            <nav class="flex flex-wrap items-center gap-2 bg-[#f2f6f5] p-1.5 rounded-full">
+                <button onclick="switchTab('billing')" id="tab-b-btn" class="tab on"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> New Bill</button>
+                <button onclick="switchTab('reports')" id="tab-r-btn" class="tab"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg> All Bills</button>
+                <button onclick="switchTab('settings')" id="tab-s-btn" class="tab"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg> Settings</button>
+            </nav>
+            <button type="button" onclick="signOut()" class="btn-soft !py-2 !px-4">Sign out</button>
+        </div>
+    </header>
+
+    <main class="max-w-[1500px] mx-auto p-4 md:p-6">
+
+        <!-- ================= NEW BILL ================= -->
+        <div id="view-billing" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+            <!-- LEFT: three simple steps -->
+            <div class="lg:col-span-6 space-y-5 no-print">
+
+                <!-- 1. Patient -->
+                <section class="card">
+                    <div class="flex items-center justify-between gap-3 mb-5">
+                        <div class="flex items-center gap-3">
+                            <span class="step">1</span>
+                            <h2 class="text-xl font-extrabold" style="color: var(--ink)">Patient</h2>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-slate-500">ID</span>
+                            <span id="disp-pid" class="font-mono text-base font-bold px-3 py-1 rounded-lg bg-teal-50 text-teal-800">26090256</span>
+                            <span id="pid-status" class="hidden text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-1 rounded-full">Existing patient</span>
+                            <button onclick="genNewPID()" title="New patient ID" class="w-10 h-10 rounded-xl text-slate-500 hover:text-teal-700 hover:bg-teal-50 transition"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="col-span-2 sm:col-span-1">
+                            <label class="lbl" for="p-name">Patient name *</label>
+                            <input type="text" id="p-name" oninput="checkExistingPatient(); syncPreview();" placeholder="Full name" class="field">
+                        </div>
+                        <div class="col-span-2 sm:col-span-1">
+                            <label class="lbl" for="p-mobile">Mobile number *</label>
+                            <input type="tel" id="p-mobile" oninput="checkExistingPatient(); syncPreview();" placeholder="017XXXXXXXX" class="field font-mono">
+                        </div>
+                        <div>
+                            <label class="lbl" for="p-age-num">Age</label>
+                            <input type="number" id="p-age-num" oninput="formatAgeInput(); syncPreview();" placeholder="Years" class="field">
+                        </div>
+                        <div>
+                            <label class="lbl" for="p-gender">Gender</label>
+                            <select id="p-gender" onchange="syncPreview()" class="field">
+                                <option value="Female">Female</option>
+                                <option value="Male">Male</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <label class="lbl" for="p-doc">Doctor</label>
+                        <input type="text" id="p-doc" oninput="syncPreview()" placeholder="Doctor's name" class="field">
+                    </div>
+
+                    <details class="mt-5 group">
+                        <summary class="flex items-center justify-between rounded-2xl bg-[#f7faf9] border-2 border-[#e0e9e7] px-4 py-3 font-bold text-slate-700">
+                            <span><svg class="ic text-teal-700 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Delivery, referral &amp; staff</span>
+                            <svg class="ic chev text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                        </summary>
+                        <div class="grid grid-cols-2 gap-4 mt-4">
+                            <div class="col-span-2">
+                                <label class="lbl" for="p-ref">Ref. doctor / note</label>
+                                <input type="text" id="p-ref" oninput="syncPreview()" placeholder="Referral doctor or note" class="field">
+                            </div>
+                            <div class="col-span-2 sm:col-span-1">
+                                <label class="lbl" for="p-del">Delivery date &amp; time</label>
+                                <input type="text" id="p-del" oninput="syncPreview()" placeholder="12-OCT-26 08:00 PM" class="field">
+                            </div>
+                        </div>
+                    </details>
+
+                    <div class="mt-4">
+                        <label class="lbl" for="p-staff">Prepared by</label>
+                        <input type="text" id="p-staff" oninput="syncPreview()" placeholder="--" class="field font-semibold">
+                    </div>
+                </section>
+
+                <!-- 2. Tests -->
+                <section class="card">
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="step">2</span>
+                        <h2 class="text-xl font-extrabold" style="color: var(--ink)">Tests &amp; services</h2>
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="lbl" for="test-search">Find a test</label>
+                        <div class="relative">
+                            <svg class="ic absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                            <input type="text" id="test-search" oninput="searchTests()" onkeydown="if(event.key==='Enter'){event.preventDefault();pickFirstTest();}" placeholder="Type a test name, e.g. CBC" autocomplete="off" class="field !pl-11">
+                        </div>
+                        <div id="test-results" class="hidden mt-2 rounded-2xl border-2 border-[#e0e9e7] bg-white overflow-hidden divide-y divide-slate-100"></div>
+                    </div>
+
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-sm text-slate-500">
+                                <th class="pb-1 font-semibold">Test</th>
+                                <th class="pb-1 w-32 text-right pr-2 font-semibold">Fee (৳)</th>
+                                <th class="w-12"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="test-list-body"></tbody>
+                    </table>
+
+                    <button onclick="addTest()" class="btn-soft mt-3 w-full"><svg class="ic mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add another test</button>
+                </section>
+
+                <!-- 3. Payment -->
+                <section class="card">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="step">3</span>
+                        <h2 class="text-xl font-extrabold" style="color: var(--ink)">Payment</h2>
+                    </div>
+
+                    <div class="divide-y divide-slate-100">
+                        <div class="sum">
+                            <span>Total</span>
+                            <span id="calc-sub" class="font-mono font-bold text-xl text-slate-800">৳0.00</span>
+                        </div>
+
+                        <div class="sum">
+                            <div class="flex items-center gap-3">
+                                <span>Discount</span>
+                                <select id="disc-type" onchange="computeMath()" class="pill-select">
+                                    <option value="percent" selected>Percent (%)</option>
+                                    <option value="flat">Flat (৳)</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span id="disc-symbol" class="text-slate-400 font-bold text-lg">%</span>
+                                <input type="number" id="calc-less" oninput="computeMath()" value="0" min="0" onfocus="if(this.value=='0')this.value='';" onblur="if(this.value=='')this.value='0';" class="field w-32 text-right font-mono font-bold text-lg">
+                            </div>
+                        </div>
+
+                        <div class="sum">
+                            <span>To pay</span>
+                            <span id="calc-payable" class="font-mono font-extrabold text-3xl" style="color: var(--teal)">৳0.00</span>
+                        </div>
+
+                        <div class="sum">
+                            <span>Patient paid</span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-emerald-600 font-bold text-lg">৳</span>
+                                <input type="number" id="calc-paid" oninput="computeMath()" value="0" min="0" onfocus="if(this.value=='0')this.value='';" onblur="if(this.value=='')this.value='0';" class="field w-40 text-right font-mono font-extrabold text-2xl text-emerald-700 border-emerald-200">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between rounded-2xl bg-rose-50 px-5 py-4 mt-3 mb-5">
+                        <span class="font-bold text-rose-700 text-lg">Still due</span>
+                        <span id="calc-due" class="font-mono font-black text-3xl text-rose-600">৳0.00</span>
+                    </div>
+
+                    <button type="button" onclick="saveAndPrintBill()" class="btn-main">
+                        <svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Save &amp; print receipt
+                    </button>
+                </section>
+            </div>
+
+            <!-- RIGHT: receipt preview (unchanged) -->
+            <div class="preview-col lg:col-span-6 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto bg-slate-300/70 p-3 md:p-5 rounded-3xl flex items-start justify-center">
+                                <div id="receipt-print-box" class="bg-white text-black w-full max-w-[500px] p-5 rounded-sm shadow-md border border-slate-400 text-[11px] leading-tight relative font-sans">
+
+                    <div class="text-center border-b border-black pb-1 mb-1">
+                        <h2 class="text-base font-black tracking-tight uppercase">ANOWARA MEDICAL COMPLEX</h2>
+                        <p class="text-[9px] font-medium leading-tight">Wapda Sadar Road, Medical Moor, Palash, Narsingdi.</p>
+                        <p class="text-[8px] leading-tight">E-mail: anowaramedicalcomplex11@gmail.com | Web: www.anowaramedicalcomplex.com</p>
+                        <p class="text-[8px] font-bold leading-tight">Mobile: 01972692504, 01712692504</p>
+                    </div>
+
+                    <div class="border-b border-black pb-0.5 mb-1.5 flex justify-between items-center">
+                        <span class="border border-black px-1.5 py-0.2 text-[8px] font-bold uppercase tracking-wider">PATIENT COPY</span>
+                        <span class="text-[11px] font-black tracking-wider uppercase">MONEY RECEIPT</span>
+                    </div>
+
+                    <div class="grid grid-cols-12 gap-y-0.5 text-[10px] mb-2 font-medium">
+                        <div class="col-span-2 text-slate-700 font-bold">Patient ID</div>
+                        <div class="col-span-4">: <strong id="prev-pid" class="font-mono text-black">26090256</strong></div>
+                        <div class="col-span-2 text-slate-700 font-bold">Date</div>
+                        <div class="col-span-4">: <strong id="prev-date" class="font-mono text-black">18-SEP-26</strong></div>
+
+                        <div class="col-span-2 text-slate-700 font-bold">Name</div>
+                        <div class="col-span-4">: <strong id="prev-name" class="text-black">-</strong></div>
+                        <div class="col-span-2 text-slate-700 font-bold">Time</div>
+                        <div class="col-span-4">: <strong id="prev-time" class="font-mono text-black">08:06 PM</strong></div>
+
+                        <div class="col-span-2 text-slate-700 font-bold">Age / Sex</div>
+                        <div class="col-span-4">: <strong id="prev-agesex" class="text-black">-</strong></div>
+                        <div class="col-span-2 text-slate-700 font-bold">Mobile</div>
+                        <div class="col-span-4">: <strong id="prev-mob" class="font-mono text-black">-</strong></div>
+
+                        <div class="col-span-2 text-slate-700 font-bold">Doctor</div>
+                        <div class="col-span-10">: <strong id="prev-doc" class="text-black">Asst, Prof. Dr. Musheda Akhter, MBBS, BCS, MS</strong></div>
+
+                        <div class="col-span-2 text-slate-700 font-bold">Ref. Doctor</div>
+                        <div class="col-span-10">: <strong id="prev-ref" class="text-black">-</strong></div>
+                    </div>
+
+                    <table class="w-full text-left text-[10px] mb-2 border-t border-b border-black">
+                        <thead>
+                            <tr class="border-b border-black font-bold">
+                                <th class="py-1 w-8 text-center">SL</th>
+                                <th class="py-1">INVESTIGATION NAME</th>
+                                <th class="py-1 text-right w-20">AMOUNT</th>
+                            </tr>
+                        </thead>
+                        <tbody id="prev-items" class="divide-y divide-slate-100"></tbody>
+                    </table>
+
+                    <div class="grid grid-cols-12 gap-2 items-start text-[10px]">
+                        <div class="col-span-7 space-y-1">
+                            <div class="border border-black p-1 flex items-center gap-2 w-max rounded-xs">
+                                <div id="qrcode-box" class="w-16 h-16 flex items-center justify-center"></div>
+                                <div class="text-[7.5px] font-bold tracking-tight uppercase leading-tight">SCAN TO<br>VERIFY</div>
+                            </div>
+                            <div class="pt-0.5">
+                                <svg id="barcode-svg" class="w-24 h-5"></svg>
+                                <p id="prev-barcode-text" class="text-[8px] font-mono font-bold tracking-widest text-black pl-1">26090256-8892</p>
+                            </div>
+                        </div>
+
+                        <div class="col-span-5 font-medium">
+                            <table class="w-full text-[10px] text-right">
+                                <tr>
+                                    <td class="py-0.5 text-slate-800 font-bold">Total :</td>
+                                    <td id="prev-sub" class="py-0.5 font-mono font-bold text-black pl-2">0.00</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-0.5 text-slate-800 font-bold">Less :</td>
+                                    <td id="prev-less" class="py-0.5 font-mono text-black pl-2">0.00</td>
+                                </tr>
+                                <tr class="border-t border-slate-400">
+                                    <td class="py-0.5 font-bold">Payable :</td>
+                                    <td id="prev-payable" class="py-0.5 font-mono font-bold text-black pl-2">0.00</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-0.5 text-slate-800 font-bold">Paid :</td>
+                                    <td id="prev-paid" class="py-0.5 font-mono text-black pl-2">0.00</td>
+                                </tr>
+                                <tr class="border-t border-black font-bold">
+                                    <td class="py-0.5 font-extrabold">Due :</td>
+                                    <td id="prev-due" class="py-0.5 font-mono text-black font-black pl-2">0.00</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 border border-dashed border-black p-1.5 flex justify-between items-center text-[10px]">
+                        <div id="prev-due-box" class="font-black text-xs uppercase tracking-wide">
+                            DUE <span id="w-due-val">0</span>
+                        </div>
+                        <div class="font-bold text-[9px]">
+                            Delivery Date: <span id="prev-del-date">-</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-2 pt-1 border-t border-slate-300 flex justify-between items-end text-[8px] text-slate-700">
+                        <div>Prepared by: <strong id="prev-staff" class="text-black">Jui</strong></div>
+                        <div class="text-right">www.anowaramedicalcomplex.com</div>
+                    </div>
+
+                    <div class="mt-1 flex justify-between text-[7px] text-slate-500 border-t border-slate-200 pt-0.5">
+                        <span>Anowara Medical Complex — Billing System</span>
+                        <span>*System Generated Receipt</span>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ================= ALL BILLS ================= -->
+        <div id="view-reports" class="hidden space-y-5 no-print">
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="card" style="background: var(--teal); color: #fff;">
+                    <p class="text-base font-semibold text-teal-100">Today</p>
+                    <div class="flex items-end justify-between mt-2">
+                        <span id="stat-today-cnt" class="text-lg font-bold text-teal-100">0</span>
+                        <span id="stat-today-amt" class="text-4xl font-black">৳0</span>
+                    </div>
+                    <p class="text-sm text-teal-100 mt-1">bills today</p>
+                </div>
+                <div class="card" style="background: #fff1f2;">
+                    <p class="text-base font-semibold text-rose-700">Money still to collect</p>
+                    <div class="flex items-end justify-between mt-2">
+                        <span id="stat-due-cnt" class="text-lg font-bold text-rose-600">0 Patients</span>
+                        <span id="stat-tot-due" class="text-4xl font-black text-rose-600">৳0</span>
+                    </div>
+                    <p class="text-sm text-rose-500 mt-1">from all patients</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="card !p-5">
+                    <p class="text-sm font-semibold text-slate-500">Last 3 days</p>
+                    <p class="mt-1"><span id="stat-3d-amt" class="text-2xl font-extrabold text-slate-800">৳0</span></p>
+                    <p class="text-sm text-slate-400"><span id="stat-3d-cnt">0</span> bills</p>
+                </div>
+                <div class="card !p-5">
+                    <p class="text-sm font-semibold text-slate-500">This week</p>
+                    <p class="mt-1"><span id="stat-wk-amt" class="text-2xl font-extrabold text-slate-800">৳0</span></p>
+                    <p class="text-sm text-slate-400"><span id="stat-wk-cnt">0</span> bills</p>
+                </div>
+                <div class="card !p-5">
+                    <p class="text-sm font-semibold text-slate-500">This month</p>
+                    <p class="mt-1"><span id="stat-mo-amt" class="text-2xl font-extrabold text-slate-800">৳0</span></p>
+                    <p class="text-sm text-slate-400"><span id="stat-mo-cnt">0</span> bills</p>
+                </div>
+                <div class="card !p-5">
+                    <p class="text-sm font-semibold text-slate-500">This year</p>
+                    <p class="mt-1"><span id="stat-yr-amt" class="text-2xl font-extrabold text-slate-800">৳0</span></p>
+                    <p class="text-sm text-slate-400"><span id="stat-yr-cnt">0</span> bills</p>
+                </div>
+            </div>
+
+            <section class="card !p-0 overflow-hidden">
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-5 border-b border-slate-100">
+                    <div class="relative flex-1">
+                        <svg class="ic absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                        <input type="text" id="search-box" oninput="loadReports()" placeholder="Search name, mobile or patient ID" class="field !pl-11">
+                    </div>
+                    <select id="filter-sel" onchange="loadReports()" class="field sm:w-72">
+                        <option value="all">All bills</option>
+                        <option value="today">Today</option>
+                        <option value="due_only">Patients with due (বকেয়া তালিকা)</option>
+                        <option value="3days">Last 3 days</option>
+                        <option value="week">This week</option>
+                        <option value="month">This month</option>
+                        <option value="year">This year</option>
+                    </select>
+                </div>
+                <div class="flex flex-col sm:flex-row sm:items-end gap-3 p-5 border-b border-slate-100 bg-slate-50/60">
+                    <div class="flex-1">
+                        <label class="lbl" for="report-date">Transactions for date</label>
+                        <input type="date" id="report-date" onchange="loadReports()" class="field sm:max-w-xs">
+                    </div>
+                    <button type="button" onclick="clearReportDate()" class="btn-soft">Clear date</button>
+                </div>
+                <div id="report-summary" class="px-5 py-3 border-b border-slate-100 text-sm font-semibold text-slate-700">
+                    Transactions: 0 &nbsp;|&nbsp; To pay: ৳0.00 &nbsp;|&nbsp; Paid: ৳0.00 &nbsp;|&nbsp; Due: ৳0.00
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50 text-slate-500 font-semibold">
+                            <tr>
+                                <th class="p-4">Date &amp; bill no.</th>
+                                <th class="p-4">Patient</th>
+                                <th class="p-4 text-right">To pay</th>
+                                <th class="p-4 text-right">Paid</th>
+                                <th class="p-4 text-right">Due</th>
+                                <th class="p-4 text-center"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="reports-table-body" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <!-- ================= SETTINGS: TEST PRICES ================= -->
+        <div id="view-settings" class="hidden space-y-5 no-print">
+            <section class="card">
+                <div class="flex items-start justify-between gap-4 flex-wrap">
+                    <div>
+                        <h2 class="text-xl font-extrabold" style="color: var(--ink)">Test prices</h2>
+                        <p class="text-slate-500 mt-1">Type the price next to each test. It saves by itself.</p>
+                    </div>
+                    <span id="unpriced-count" class="px-4 py-2 rounded-full bg-amber-100 text-amber-800 font-bold text-sm"></span>
+                </div>
+                <div class="relative mt-5">
+                    <svg class="ic absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    <input type="text" id="price-search" oninput="renderPriceList()" placeholder="Search a test" class="field !pl-11">
+                </div>
+            </section>
+
+            <section class="card !p-0 overflow-hidden">
+                <div id="price-list"></div>
+            </section>
+
+            <section class="card">
+                <h3 class="text-lg font-extrabold mb-4" style="color: var(--ink)">Add a new test or service</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                    <div class="sm:col-span-6">
+                        <label class="lbl" for="new-test-name">Name</label>
+                        <input type="text" id="new-test-name" placeholder="Test or service name" class="field">
+                    </div>
+                    <div class="sm:col-span-3">
+                        <label class="lbl" for="new-test-price">Price (৳)</label>
+                        <input type="number" id="new-test-price" min="0" placeholder="0" class="field font-mono font-bold">
+                    </div>
+                    <div class="sm:col-span-3">
+                        <button onclick="addCustomTest()" class="btn-soft w-full"><svg class="ic mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+    </main>
+
+    <!-- ================= SETTINGS ================= -->
+    <!-- Collect due -->
+    <div id="due-modal" class="fixed inset-0 bg-slate-900/50 hidden items-center justify-center z-50 p-4 no-print">
+        <div class="bg-white rounded-3xl max-w-md w-full p-7 shadow-2xl space-y-5">
+            <div class="flex justify-between items-center">
+                <h3 class="font-extrabold text-xl" style="color: var(--ink)">Collect due</h3>
+                <button onclick="closeDueModal()" title="Close" class="w-10 h-10 rounded-xl text-slate-400 hover:bg-slate-100 text-lg"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+            </div>
+            <div class="rounded-2xl bg-slate-50 p-4 space-y-1">
+                <p class="text-slate-600">Patient: <strong id="m-name" class="text-slate-900"></strong></p>
+                <p class="text-slate-600">Still due: <strong id="m-due" class="text-rose-600 font-mono text-xl"></strong></p>
+            </div>
+            <div>
+                <label class="lbl" for="m-input">Amount received (৳)</label>
+                <input type="number" id="m-input" min="1" class="field font-mono font-bold text-2xl text-emerald-700">
+            </div>
+            <div class="flex gap-3">
+                <button onclick="closeDueModal()" class="flex-1 py-4 rounded-2xl bg-slate-100 hover:bg-slate-200 font-bold text-slate-700">Cancel</button>
+                <button onclick="submitDue()" class="flex-1 py-4 rounded-2xl btn-green text-lg">Save payment</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script>
+        const IC_X = "<svg class=\"ic \" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M18 6 6 18M6 6l12 12\"/></svg>";
+        const IC_CHECK = "<svg class=\"ic \" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"m9 12 2 2 4-4\"/></svg>";
+        const firebaseConfig = {
+            apiKey: "AIzaSyDO2vPUfCjKrrV1q8T29LYFbNBC2DlzFSw",
+            authDomain: "anowar-paybill.firebaseapp.com",
+            projectId: "anowar-paybill",
+            storageBucket: "anowar-paybill.firebasestorage.app",
+            messagingSenderId: "401339676847",
+            appId: "1:401339676847:web:7d87c62d55aa065ce53c5a",
+            measurementId: "G-SS9YGH9TD8"
+        };
+        let firebaseAuth = null;
+        let firestore = null;
+        let currentUser = null;
+        let billsUnsubscribe = null;
+        let appInitialized = false;
+        let curPID = "";
+        let curInvCode = "";
+        let testRows = [];
+        let curDueIdx = -1;
+        let qrCodeObj = null;
+
+
+        // ---------- Test price list (Settings) ----------
+        const DEFAULT_TESTS = [{"cat": "হেমাটোলজি ও রক্ত পরীক্ষা", "bn": "রক্তের গ্রুপ ও আরএইচ ফ্যাক্টর", "en": "Blood Grouping & Rh Factor", "note": "", "price": 0}, {"cat": "হেমাটোলজি ও রক্ত পরীক্ষা", "bn": "সম্পূর্ণ রক্ত গণনা", "en": "CBC (Complete Blood Count)", "note": "", "price": 400}, {"cat": "হেমাটোলজি ও রক্ত পরীক্ষা", "bn": "ইএসআর", "en": "ESR", "note": "", "price": 0}, {"cat": "হেমাটোলজি ও রক্ত পরীক্ষা", "bn": "হিমোগ্লোবিন", "en": "Hb%", "note": "", "price": 0}, {"cat": "হেমাটোলজি ও রক্ত পরীক্ষা", "bn": "ডিফারেনশিয়াল কাউন্ট", "en": "DC (Differential Count)", "note": "Neutrophils, Lymphocytes, Eosinophils, Monocytes, Basophils", "price": 0}, {"cat": "হেমাটোলজি ও রক্ত পরীক্ষা", "bn": "ম্যালেরিয়া প্যারাসাইট", "en": "MP (Malaria Parasite)", "note": "", "price": 0}, {"cat": "হেমাটোলজি ও রক্ত পরীক্ষা", "bn": "ব্লিডিং টাইম (BT) ও কোগুলেশন টাইম (CT)", "en": "BT & CT", "note": "", "price": 0}, {"cat": "হেমাটোলজি ও রক্ত পরীক্ষা", "bn": "প্রোথ্রোমবিন টাইম", "en": "Prothrombin Time / INR", "note": "", "price": 0}, {"cat": "হেমাটোলজি ও রক্ত পরীক্ষা", "bn": "মোট প্লেটলেট কাউন্ট", "en": "Total Platelet Count", "note": "", "price": 0}, {"cat": "বায়োকেমিস্ট্রি ও মেটাবলিক টেস্ট", "bn": "লিভার ফাংশন টেস্ট", "en": "LFT (Liver Function Test)", "note": "S. Bilirubin Total/Direct/Indirect, SGOT/AST, SGPT/ALT, Alkaline Phosphatase", "price": 0}, {"cat": "বায়োকেমিস্ট্রি ও মেটাবলিক টেস্ট", "bn": "কিডনি ফাংশন টেস্ট", "en": "Kidney Function Test", "note": "S. Creatinine, GFR, S. Urea, S. BUN, Uric Acid", "price": 0}, {"cat": "বায়োকেমিস্ট্রি ও মেটাবলিক টেস্ট", "bn": "লিপিড প্রোফাইল", "en": "Lipid Profile", "note": "Total Cholesterol, Triglyceride, HDL, LDL", "price": 0}, {"cat": "বায়োকেমিস্ট্রি ও মেটাবলিক টেস্ট", "bn": "রক্তের শর্করা পরীক্ষা", "en": "Plasma Glucose", "note": "Fasting, Random, 2 Hours After Breakfast, OGTT", "price": 150}, {"cat": "বায়োকেমিস্ট্রি ও মেটাবলিক টেস্ট", "bn": "গ্লাইকোসিলেটেড হিমোগ্লোবিন", "en": "HbA1c", "note": "", "price": 0}, {"cat": "বায়োকেমিস্ট্রি ও মেটাবলিক টেস্ট", "bn": "সিরাম ইলেক্ট্রোলাইটস", "en": "Serum Electrolytes", "note": "Sodium, Potassium, Chloride, TCO2", "price": 0}, {"cat": "বায়োকেমিস্ট্রি ও মেটাবলিক টেস্ট", "bn": "সিরাম প্রোটিন ও অ্যালবুমিন", "en": "Serum Protein & Albumin", "note": "S. Total Protein, S. Albumin", "price": 0}, {"cat": "বায়োকেমিস্ট্রি ও মেটাবলিক টেস্ট", "bn": "", "en": "S. Calcium, S. Amylase, S. Acid Phosphatase", "note": "", "price": 0}, {"cat": "সেরোলজি ও ইমিউনোলজি টেস্ট", "bn": "টাইফয়েড পরীক্ষা", "en": "Typhoid (Widal & Febrile/Triple Antigen)", "note": "", "price": 0}, {"cat": "সেরোলজি ও ইমিউনোলজি টেস্ট", "bn": "ডেঙ্গু স্ক্রিনিং", "en": "Dengue (NS1, IgG, IgM)", "note": "", "price": 0}, {"cat": "সেরোলজি ও ইমিউনোলজি টেস্ট", "bn": "হেপাটাইটিস বি এবং সি স্ক্রিনিং", "en": "Hepatitis B & C (HBsAg, HCV)", "note": "", "price": 0}, {"cat": "সেরোলজি ও ইমিউনোলজি টেস্ট", "bn": "রিউমাটয়েড আর্থ্রাইটিস ও ইনফ্লেমেশন", "en": "RA Test, CRP, hs-CRP, ASO Titre", "note": "", "price": 0}, {"cat": "সেরোলজি ও ইমিউনোলজি টেস্ট", "bn": "ভিডিআরএল ও টিপিএইচএ", "en": "VDRL & TPHA", "note": "", "price": 0}, {"cat": "সেরোলজি ও ইমিউনোলজি টেস্ট", "bn": "এইচআইভি স্ক্রিনিং", "en": "HIV-1 & HIV-2", "note": "", "price": 0}, {"cat": "সেরোলজি ও ইমিউনোলজি টেস্ট", "bn": "চিকুনগুনিয়া পরীক্ষা", "en": "Chikungunya IgG & IgM", "note": "", "price": 0}, {"cat": "সেরোলজি ও ইমিউনোলজি টেস্ট", "bn": "হেলিকোব্যাকটার পাইলোরি অ্যান্টিবডি", "en": "Anti-H. pylori", "note": "", "price": 0}, {"cat": "সেরোলজি ও ইমিউনোলজি টেস্ট", "bn": "যক্ষ্মা শনাক্তকরণ মান্টৌক্স টেস্ট", "en": "Mantoux Test", "note": "", "price": 0}, {"cat": "হরমোন ও অন্যান্য বিশেষ পরীক্ষা", "bn": "থাইরয়েড প্রোফাইল", "en": "Thyroid Profile", "note": "TSH, Total T3, Total T4, Free T3, Free T4", "price": 0}, {"cat": "হরমোন ও অন্যান্য বিশেষ পরীক্ষা", "bn": "প্রোল্যাকটিন হরমোন", "en": "Prolactin", "note": "", "price": 0}, {"cat": "হরমোন ও অন্যান্য বিশেষ পরীক্ষা", "bn": "প্রজনন হরমোন", "en": "Testosterone & Estradiol", "note": "S. Testosterone, Estradiol/Oestrogen", "price": 0}, {"cat": "হরমোন ও অন্যান্য বিশেষ পরীক্ষা", "bn": "কার্ডিয়াক মার্কার", "en": "Troponin-I", "note": "", "price": 0}, {"cat": "হরমোন ও অন্যান্য বিশেষ পরীক্ষা", "bn": "টিউমার মার্কার", "en": "CA-125", "note": "", "price": 0}, {"cat": "হরমোন ও অন্যান্য বিশেষ পরীক্ষা", "bn": "বিটা-এইচসিজি হরমোন পরীক্ষা", "en": "Beta-hCG", "note": "", "price": 0}, {"cat": "অন্যান্য রুটিন পরীক্ষা", "bn": "ইউরিন রুটিন পরীক্ষা", "en": "Urine Routine Examination", "note": "Physical, Chemical & Microscopic Examination", "price": 0}, {"cat": "অন্যান্য রুটিন পরীক্ষা", "bn": "গর্ভাবস্থা পরীক্ষা", "en": "Urine for Pregnancy (ICT)", "note": "", "price": 0}, {"cat": "অন্যান্য রুটিন পরীক্ষা", "bn": "স্টুল বা মল পরীক্ষা", "en": "Stool Routine Examination", "note": "", "price": 0}, {"cat": "অন্যান্য রুটিন পরীক্ষা", "bn": "সিমেন অ্যানালাইসিস", "en": "Semen Analysis", "note": "", "price": 0}, {"cat": "অন্যান্য সেবা (Other services)", "bn": "", "en": "Cross-Matching", "note": "", "price": 2500, "custom": true}, {"cat": "অন্যান্য সেবা (Other services)", "bn": "", "en": "USG", "note": "", "price": 1200, "custom": true}, {"cat": "অন্যান্য সেবা (Other services)", "bn": "", "en": "ECG", "note": "", "price": 300, "custom": true}];
+        const EXTRA_CAT = "অন্যান্য সেবা (Other services)";
+        let tests = [];
+        let lastMatches = [];
+        let testSaveQueue = Promise.resolve();
+
+        function esc(t) {
+            return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function loadTests() {
+            let saved = null;
+            try { saved = JSON.parse(localStorage.getItem('amc_tests') || 'null'); } catch (e) {}
+            if (Array.isArray(saved) && saved.length) {
+                tests = saved;
+            } else {
+                tests = JSON.parse(JSON.stringify(DEFAULT_TESTS));
+                saveTests();
+            }
+        }
+
+        function saveTests() {
+            localStorage.setItem('amc_tests', JSON.stringify(tests));
+            if (currentUser && firestore) {
+                const snapshot = JSON.parse(JSON.stringify(tests));
+                testSaveQueue = testSaveQueue.then(() =>
+                    userDataRef().collection('appData').doc('tests').set({ items: snapshot, updatedAt: Date.now() })
+                ).catch(error => {
+                    console.error('Unable to sync test prices to Firestore:', error);
+                    showToast('Test prices changed locally but could not sync to Firebase.', 'error');
+                });
+            }
+        }
+
+        function renderPriceList() {
+            const box = document.getElementById('price-list');
+            if (!box) return;
+            const q = document.getElementById('price-search').value.trim().toLowerCase();
+            let html = '';
+            let lastCat = null;
+            tests.forEach((t, i) => {
+                if (q && !((t.en + ' ' + t.bn + ' ' + t.note + ' ' + t.cat).toLowerCase().includes(q))) return;
+                if (t.cat !== lastCat) {
+                    html += `<div class="px-5 py-3 bg-slate-50 text-sm font-bold text-teal-800 border-y border-slate-100">${esc(t.cat)}</div>`;
+                    lastCat = t.cat;
+                }
+                html += `
+                    <div class="flex items-center justify-between gap-4 px-5 py-3 border-b border-slate-100">
+                        <div class="min-w-0">
+                            <div class="font-bold text-slate-900">${esc(t.en)}</div>
+                            ${t.bn ? `<div class="text-sm text-slate-500">${esc(t.bn)}</div>` : ''}
+                            ${t.note ? `<div class="text-xs text-slate-400">${esc(t.note)}</div>` : ''}
+                        </div>
+                        <div class="flex items-center gap-2 flex-none">
+                            <span class="text-slate-400 font-bold">৳</span>
+                            <input type="number" min="0" value="${t.price ? t.price : ''}" placeholder="0" oninput="setPrice(${i}, this.value)" class="field w-28 text-right font-mono font-bold">
+                            ${t.custom ? `<button onclick="removeCustomTest(${i})" title="Remove this test" class="w-10 h-10 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 inline-flex items-center justify-center">${IC_X}</button>` : '<span class="w-10"></span>'}
+                        </div>
+                    </div>`;
+            });
+            box.innerHTML = html || `<div class="p-10 text-center text-slate-400">No tests found.</div>`;
+            updateUnpricedCount();
+        }
+
+        function setPrice(i, val) {
+            tests[i].price = Math.max(0, parseFloat(val) || 0);
+            saveTests();
+            updateUnpricedCount();
+        }
+
+        function updateUnpricedCount() {
+            const el = document.getElementById('unpriced-count');
+            if (!el) return;
+            const n = tests.filter(t => !(t.price > 0)).length;
+            if (n === 0) {
+                el.className = 'px-4 py-2 rounded-full bg-emerald-100 text-emerald-800 font-bold text-sm';
+                el.textContent = 'All prices are set';
+            } else {
+                el.className = 'px-4 py-2 rounded-full bg-amber-100 text-amber-800 font-bold text-sm';
+                el.textContent = n + (n === 1 ? ' test has' : ' tests have') + ' no price yet';
+            }
+        }
+
+        function addCustomTest() {
+            const nameEl = document.getElementById('new-test-name');
+            const priceEl = document.getElementById('new-test-price');
+            const name = nameEl.value.trim();
+            if (!name) { showToast('Please type the test name.', 'error'); return; }
+            tests.push({ cat: EXTRA_CAT, bn: '', en: name, note: '', price: Math.max(0, parseFloat(priceEl.value) || 0), custom: true });
+            saveTests();
+            nameEl.value = '';
+            priceEl.value = '';
+            renderPriceList();
+            showToast('Test added.', 'success');
+        }
+
+        function removeCustomTest(i) {
+            if (tests[i] && tests[i].custom) {
+                tests.splice(i, 1);
+                saveTests();
+                renderPriceList();
+            }
+        }
+
+        // ---------- Test search on the New Bill page ----------
+        function searchTests() {
+            const q = document.getElementById('test-search').value.trim().toLowerCase();
+            const box = document.getElementById('test-results');
+            lastMatches = [];
+            if (!q) { box.innerHTML = ''; box.classList.add('hidden'); return; }
+            tests.forEach((t, i) => {
+                if ((t.en + ' ' + t.bn + ' ' + t.note).toLowerCase().includes(q)) lastMatches.push(i);
+            });
+            lastMatches = lastMatches.slice(0, 8);
+            box.classList.remove('hidden');
+            if (lastMatches.length === 0) {
+                box.innerHTML = `<div class="p-4 text-slate-400">No test found. You can add it with "Add another test".</div>`;
+                return;
+            }
+            box.innerHTML = lastMatches.map(i => {
+                const t = tests[i];
+                return `<button type="button" onclick="pickTest(${i})" class="w-full flex items-center justify-between gap-3 text-left px-4 py-3 hover:bg-teal-50 transition">
+                    <span class="min-w-0">
+                        <span class="block font-bold text-slate-900">${esc(t.en)}</span>
+                        ${t.bn ? `<span class="block text-sm text-slate-500">${esc(t.bn)}</span>` : ''}
+                    </span>
+                    <span class="font-mono font-bold flex-none ${t.price > 0 ? 'text-teal-700' : 'text-slate-300'}">৳${t.price > 0 ? t.price : '--'}</span>
+                </button>`;
+            }).join('');
+        }
+
+        function pickTest(i) {
+            const t = tests[i];
+            if (!t) return;
+            addTest(t.en, t.price || 0);
+            const input = document.getElementById('test-search');
+            input.value = '';
+            searchTests();
+            input.focus();
+        }
+
+        function pickFirstTest() {
+            if (lastMatches.length) pickTest(lastMatches[0]);
+        }
+
+        window.onload = function() {
+            if (!window.firebase) {
+                setAuthError('Firebase libraries did not load. Check your internet connection and reload.');
+                return;
+            }
+            try {
+                firebase.initializeApp(firebaseConfig);
+                firebaseAuth = firebase.auth();
+                firestore = firebase.firestore();
+                firebaseAuth.onAuthStateChanged(async user => {
+                    if (!user) {
+                        if (billsUnsubscribe) {
+                            billsUnsubscribe();
+                            billsUnsubscribe = null;
+                        }
+                        currentUser = null;
+                        document.body.classList.add('auth-lock');
+                        document.getElementById('auth-gate').classList.remove('hidden');
+                        return;
+                    }
+                    currentUser = user;
+                    setAuthError('');
+                    document.getElementById('auth-submit').disabled = true;
+                    document.getElementById('auth-submit').textContent = 'Loading your data...';
+                    try {
+                        await loadCloudData();
+                        loadTests();
+                        if (!appInitialized) {
+                            initDefaults();
+                            appInitialized = true;
+                        }
+                        loadReports();
+                        renderPriceList();
+                        if (billsUnsubscribe) billsUnsubscribe();
+                        billsUnsubscribe = userDataRef().collection('bills').onSnapshot(snapshot => {
+                            const records = snapshot.docs.map(doc => doc.data())
+                                .sort((a, b) => (Number(b.timestamp) || 0) - (Number(a.timestamp) || 0));
+                            localStorage.setItem('amc_bill_records', JSON.stringify(records));
+                            loadReports();
+                        }, error => {
+                            console.error('Live bill sync failed:', error);
+                            showToast('Live bill sync stopped: ' + error.message, 'error');
+                        });
+                        document.getElementById('auth-gate').classList.add('hidden');
+                        document.body.classList.remove('auth-lock');
+                        document.getElementById('auth-password').value = '';
+                    } catch (error) {
+                        currentUser = null;
+                        setAuthError('Could not load or sync Firebase data. Check that Firestore rules are set correctly, then sign in again. ' + error.message);
+                        console.error('Firebase data initialization failed:', error);
+                        try {
+                            await firebaseAuth.signOut();
+                        } catch (signOutError) {
+                            console.error('Could not sign out after Firebase data initialization failed:', signOutError);
+                        }
+                    } finally {
+                        document.getElementById('auth-submit').disabled = false;
+                        document.getElementById('auth-submit').textContent = 'Sign in';
+                    }
+                }, error => {
+                    setAuthError('Firebase authentication error: ' + error.message);
+                    console.error('Firebase auth state error:', error);
+                });
+            } catch (error) {
+                setAuthError('Firebase could not start: ' + error.message);
+                console.error('Firebase initialization failed:', error);
+            }
+        };
+
+        function setAuthError(message) {
+            const el = document.getElementById('auth-error');
+            el.textContent = message;
+            el.classList.toggle('hidden', !message);
+        }
+
+        function setAuthInfo(message) {
+            const el = document.getElementById('auth-info');
+            el.textContent = message;
+            el.classList.toggle('hidden', !message);
+        }
+
+        async function signIn(event) {
+            event.preventDefault();
+            if (!firebaseAuth) {
+                setAuthError('Firebase is not ready. Reload the page and try again.');
+                return;
+            }
+            const button = document.getElementById('auth-submit');
+            button.disabled = true;
+            button.textContent = 'Signing in...';
+            setAuthError('');
+            setAuthInfo('');
+            try {
+                await firebaseAuth.signInWithEmailAndPassword(
+                    document.getElementById('auth-email').value.trim(),
+                    document.getElementById('auth-password').value
+                );
+            } catch (error) {
+                setAuthError('Sign-in failed: ' + error.message);
+                console.error('Firebase sign-in failed:', error);
+                button.disabled = false;
+                button.textContent = 'Sign in';
+            }
+        }
+
+        async function resetPassword() {
+            if (!firebaseAuth) {
+                setAuthError('Firebase is not ready. Reload the page and try again.');
+                return;
+            }
+            const email = document.getElementById('auth-email').value.trim();
+            if (!email) {
+                setAuthError('আগে Email ঘরে আপনার Firebase Authentication email লিখুন।');
+                document.getElementById('auth-email').focus();
+                return;
+            }
+            setAuthError('');
+            setAuthInfo('');
+            try {
+                await firebaseAuth.sendPasswordResetEmail(email);
+                setAuthInfo('Password reset email sent. Inbox বা spam folder দেখুন, তারপর নতুন password দিয়ে sign in করুন।');
+            } catch (error) {
+                if (error.code === 'auth/operation-not-allowed') {
+                    setAuthError('Firebase Console → Authentication → Sign-in method থেকে Email/Password provider চালু করুন।');
+                } else {
+                    setAuthError('Password reset email could not be sent: ' + error.message);
+                }
+                console.error('Firebase password reset failed:', error);
+            }
+        }
+
+        async function signOut() {
+            try {
+                await firebaseAuth.signOut();
+            } catch (error) {
+                showToast('Could not sign out: ' + error.message, 'error');
+                console.error('Firebase sign-out failed:', error);
+            }
+        }
+
+        function userDataRef() {
+            if (!currentUser || !firestore) throw new Error('Sign in to access your cloud data.');
+            return firestore.collection('users').doc(currentUser.uid);
+        }
+
+        async function loadCloudData() {
+            const userRef = userDataRef();
+            const cachedUid = localStorage.getItem('amc_cloud_user_uid');
+            const mayMigrateLocalData = !cachedUid || cachedUid === currentUser.uid;
+            const [billsSnapshot, testsSnapshot] = await Promise.all([
+                userRef.collection('bills').get(),
+                userRef.collection('appData').doc('tests').get()
+            ]);
+
+            let localTests;
+            try {
+                localTests = JSON.parse(localStorage.getItem('amc_tests') || 'null');
+            } catch (error) {
+                console.error('Unable to read locally saved test prices:', error);
+                throw new Error('Local test-price data is unreadable.');
+            }
+            if (testsSnapshot.exists && Array.isArray(testsSnapshot.data().items)) {
+                localStorage.setItem('amc_tests', JSON.stringify(testsSnapshot.data().items));
+            } else {
+                const seedTests = mayMigrateLocalData && Array.isArray(localTests) && localTests.length ? localTests : DEFAULT_TESTS;
+                await userRef.collection('appData').doc('tests').set({ items: seedTests, updatedAt: Date.now() });
+                localStorage.setItem('amc_tests', JSON.stringify(seedTests));
+            }
+
+            let localRecords;
+            try {
+                localRecords = JSON.parse(localStorage.getItem('amc_bill_records') || '[]');
+            } catch (error) {
+                console.error('Unable to read locally saved bills:', error);
+                throw new Error('Locally saved bill data is unreadable.');
+            }
+            if (!Array.isArray(localRecords)) throw new Error('Locally saved bill data has an invalid format.');
+            if (!mayMigrateLocalData) localRecords = [];
+
+            const cloudRecords = billsSnapshot.docs.map(doc => doc.data());
+            const cloudCodes = new Set(cloudRecords.map(record => record.invCode));
+            const migrationRecords = localRecords.filter(record => record && record.invCode && !cloudCodes.has(record.invCode));
+            for (const record of migrationRecords) {
+                await userRef.collection('bills').doc(String(record.invCode)).set(record);
+            }
+            const mergedRecords = cloudRecords.concat(migrationRecords)
+                .sort((a, b) => (Number(b.timestamp) || 0) - (Number(a.timestamp) || 0));
+            localStorage.setItem('amc_bill_records', JSON.stringify(mergedRecords));
+            localStorage.setItem('amc_cloud_user_uid', currentUser.uid);
+        }
+
+        function switchTab(tab) {
+            const map = {
+                billing:  ['view-billing',  'tab-b-btn'],
+                reports:  ['view-reports',  'tab-r-btn'],
+                settings: ['view-settings', 'tab-s-btn']
+            };
+            Object.keys(map).forEach(k => {
+                document.getElementById(map[k][0]).classList.toggle('hidden', k !== tab);
+                document.getElementById(map[k][1]).classList.toggle('on', k === tab);
+            });
+            if (tab === 'reports') loadReports();
+            if (tab === 'settings') renderPriceList();
+            window.scrollTo(0, 0);
+        }
+
+        function initDefaults() {
+            genNewPID();
+            document.getElementById('p-del').value = getFormattedCurrentDateTime();
+            testRows = [];
+            renderTestTable();
+            computeMath();
+        }
+
+        function genNewPID() {
+            curPID = Math.floor(10000000 + Math.random() * 90000000).toString();
+            curInvCode = curPID + "-" + Math.floor(1000 + Math.random() * 9000).toString();
+            document.getElementById('disp-pid').innerText = curPID;
+            document.getElementById('pid-status').classList.add('hidden');
+            syncPreview();
+        }
+
+        function getFormattedCurrentDateTime() {
+            const now = new Date();
+            const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+            const d = String(now.getDate()).padStart(2, '0');
+            const m = months[now.getMonth()];
+            const y = String(now.getFullYear()).slice(-2);
+            let hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            return `${d}-${m}-${y} ${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+        }
+
+        function formatAgeInput() {
+            let val = document.getElementById('p-age-num').value.trim();
+            if (val && !val.includes('Y') && !val.includes('y')) {
+                // Formatting is applied visually in the receipt sync
+            }
+        }
+
+        function checkExistingPatient() {
+            const name = document.getElementById('p-name').value.trim().toLowerCase();
+            const mob = document.getElementById('p-mobile').value.trim();
+
+            if (!name || !mob || mob.length < 5) return;
+
+            let records = JSON.parse(localStorage.getItem('amc_bill_records') || '[]');
+            let existing = records.find(r =>
+                r.name.trim().toLowerCase() === name &&
+                r.mobile.trim() === mob
+            );
+
+            if (existing) {
+                curPID = existing.pid;
+                document.getElementById('disp-pid').innerText = curPID;
+                document.getElementById('pid-status').classList.remove('hidden');
+            }
+        }
+
+        function addTest(name = '', fee = 0) {
+            testRows.push({ name: name, fee: fee });
+            renderTestTable();
+            computeMath();
+        }
+
+        function removeTest(idx) {
+            testRows.splice(idx, 1);
+            renderTestTable();
+            computeMath();
+        }
+
+        function updateTest(idx, field, val) {
+            if (field === 'fee') {
+                testRows[idx].fee = parseFloat(val) || 0;
+            } else {
+                testRows[idx].name = val;
+            }
+            computeMath();
+        }
+
+        function renderTestTable() {
+            const tbody = document.getElementById('test-list-body');
+            tbody.innerHTML = '';
+            if (testRows.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="py-6 text-center text-slate-400">No tests yet. Search above to add one.</td></tr>`;
+                return;
+            }
+            testRows.forEach((item, i) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-1.5 pr-2">
+                        <input type="text" value="${item.name}" oninput="updateTest(${i}, 'name', this.value)" placeholder="Test name" class="field">
+                    </td>
+                    <td class="py-1.5 pr-2 w-32">
+                        <input type="number" value="${item.fee}" oninput="updateTest(${i}, 'fee', this.value)" class="field text-right font-bold tabular-nums">
+                    </td>
+                    <td class="py-1.5 w-12 text-center">
+                        <button onclick="removeTest(${i})" title="Remove" class="w-10 h-10 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition inline-flex items-center justify-center">${IC_X}</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function computeMath() {
+            let sub = testRows.reduce((acc, row) => acc + (parseFloat(row.fee) || 0), 0);
+            let discType = document.getElementById('disc-type').value;
+            let discVal = parseFloat(document.getElementById('calc-less').value) || 0;
+
+            document.getElementById('disc-symbol').innerText = discType === 'percent' ? '%' : '৳';
+
+            let less = 0;
+            if (discType === 'percent') {
+                less = (sub * discVal) / 100;
+            } else {
+                less = discVal;
+            }
+
+            let payable = Math.max(0, sub - less);
+            let paid = parseFloat(document.getElementById('calc-paid').value) || 0;
+            let due = Math.max(0, payable - paid);
+
+            document.getElementById('calc-sub').innerText = '৳' + sub.toFixed(2);
+            document.getElementById('calc-payable').innerText = '৳' + payable.toFixed(2);
+            document.getElementById('calc-due').innerText = '৳' + due.toFixed(2);
+
+            syncPreview();
+        }
+
+        function syncPreview() {
+            document.getElementById('prev-pid').innerText = curPID;
+            const now = new Date();
+            const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+            document.getElementById('prev-date').innerText = `${now.getDate()}-${months[now.getMonth()]}-${String(now.getFullYear()).slice(-2)}`;
+
+            let hours = now.getHours();
+            let mins = String(now.getMinutes()).padStart(2, '0');
+            let ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12 || 12;
+            document.getElementById('prev-time').innerText = `${String(hours).padStart(2, '0')}:${mins} ${ampm}`;
+
+            document.getElementById('prev-name').innerText = document.getElementById('p-name').value.trim() || '-';
+            document.getElementById('prev-mob').innerText = document.getElementById('p-mobile').value.trim() || '-';
+
+            let ageNum = document.getElementById('p-age-num').value.trim();
+            let ageStr = ageNum ? `${ageNum} Y` : '-';
+            let gender = document.getElementById('p-gender').value;
+            document.getElementById('prev-agesex').innerText = ageNum ? `${ageStr} / ${gender}` : '-';
+
+            document.getElementById('prev-doc').innerText = document.getElementById('p-doc').value.trim() || '-';
+            document.getElementById('prev-ref').innerText = document.getElementById('p-ref').value.trim() || '-';
+            document.getElementById('prev-staff').innerText = document.getElementById('p-staff').value.trim() || '--';
+            document.getElementById('prev-del-date').innerText = document.getElementById('p-del').value.trim() || '-';
+
+            // Items table
+            const pItems = document.getElementById('prev-items');
+            pItems.innerHTML = '';
+            testRows.forEach((row, i) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-1 text-center font-mono">${i + 1}</td>
+                    <td class="py-1 font-bold">${row.name || 'Investigation Service'}</td>
+                    <td class="py-1 text-right font-mono font-bold">${(parseFloat(row.fee) || 0).toFixed(2)}</td>
+                `;
+                pItems.appendChild(tr);
+            });
+
+            // Financials
+            let sub = testRows.reduce((acc, r) => acc + (parseFloat(r.fee) || 0), 0);
+            let discType = document.getElementById('disc-type').value;
+            let discVal = parseFloat(document.getElementById('calc-less').value) || 0;
+            let less = discType === 'percent' ? (sub * discVal) / 100 : discVal;
+            let payable = Math.max(0, sub - less);
+            let paid = parseFloat(document.getElementById('calc-paid').value) || 0;
+            let due = Math.max(0, payable - paid);
+
+            document.getElementById('prev-sub').innerText = sub.toFixed(2);
+            document.getElementById('prev-less').innerText = less.toFixed(2);
+            document.getElementById('prev-payable').innerText = payable.toFixed(2);
+            document.getElementById('prev-paid').innerText = paid.toFixed(2);
+            document.getElementById('prev-due').innerText = due.toFixed(2);
+
+            const dueBox = document.getElementById('prev-due-box');
+            if (due > 0) {
+                dueBox.innerHTML = `DUE <span class="font-mono">${due.toFixed(0)}</span>`;
+                dueBox.className = "font-black text-xs uppercase tracking-wide text-black";
+            } else {
+                dueBox.innerHTML = `PAID IN FULL`;
+                dueBox.className = "font-black text-xs uppercase tracking-wide text-emerald-800";
+            }
+
+            // QR & Barcode Generation
+            document.getElementById('prev-barcode-text').innerText = curInvCode;
+            try {
+                JsBarcode("#barcode-svg", curInvCode, {
+                    format: "CODE128",
+                    width: 1.2,
+                    height: 22,
+                    displayValue: false,
+                    margin: 0
+                });
+            } catch(e) {}
+
+            let qrText = `PID:${curPID}|NAME:${document.getElementById('p-name').value.trim()}|DUE:${due.toFixed(0)}`;
+            const qrBox = document.getElementById('qrcode-box');
+            qrBox.innerHTML = '';
+            try {
+                new QRCode(qrBox, {
+                    text: qrText,
+                    width: 60,
+                    height: 60,
+                    correctLevel: QRCode.CorrectLevel.L
+                });
+            } catch(e) {}
+        }
+
+        async function saveAndPrintBill() {
+            let name = document.getElementById('p-name').value.trim();
+            if (!name) {
+                showToast("Please enter Patient Name before printing!", "error");
+                return;
+            }
+
+            let sub = testRows.reduce((acc, r) => acc + (parseFloat(r.fee) || 0), 0);
+            let discType = document.getElementById('disc-type').value;
+            let discVal = parseFloat(document.getElementById('calc-less').value) || 0;
+            let less = discType === 'percent' ? (sub * discVal) / 100 : discVal;
+            let payable = Math.max(0, sub - less);
+            let paid = parseFloat(document.getElementById('calc-paid').value) || 0;
+            let due = Math.max(0, payable - paid);
+
+            let record = {
+                pid: curPID,
+                invCode: curInvCode,
+                name: name,
+                mobile: document.getElementById('p-mobile').value.trim(),
+                age: document.getElementById('p-age-num').value.trim(),
+                gender: document.getElementById('p-gender').value,
+                doctor: document.getElementById('p-doc').value.trim(),
+                payable: payable,
+                paid: paid,
+                due: due,
+                timestamp: Date.now(),
+                dateStr: new Date().toLocaleDateString()
+            };
+
+            try {
+                await userDataRef().collection('bills').doc(String(record.invCode)).set(record);
+            } catch (error) {
+                showToast('Bill could not be saved to Firebase; it was not printed. ' + error.message, 'error');
+                console.error('Unable to save bill to Firestore:', error);
+                return;
+            }
+
+            let records = JSON.parse(localStorage.getItem('amc_bill_records') || '[]');
+            records.unshift(record);
+            localStorage.setItem('amc_bill_records', JSON.stringify(records));
+
+            showToast("Bill saved successfully!", "success");
+            window.print();
+
+            genNewPID();
+            document.getElementById('p-name').value = '';
+            document.getElementById('p-mobile').value = '';
+            document.getElementById('p-age-num').value = '';
+            document.getElementById('calc-paid').value = '0';
+            document.getElementById('calc-less').value = '0';
+            testRows = [];
+            renderTestTable();
+            computeMath();
+        }
+
+        function loadReports() {
+            let records = JSON.parse(localStorage.getItem('amc_bill_records') || '[]');
+            let search = document.getElementById('search-box').value.toLowerCase().trim();
+            let filter = document.getElementById('filter-sel').value;
+            let selectedDate = document.getElementById('report-date').value;
+
+            const now = new Date();
+            let filtered = records.filter(r => {
+                let matchSearch = !search ||
+                    r.name.toLowerCase().includes(search) ||
+                    r.mobile.includes(search) ||
+                    r.pid.includes(search) ||
+                    r.invCode.toLowerCase().includes(search);
+
+                if (!matchSearch) return false;
+
+                let rDate = new Date(r.timestamp);
+                if (selectedDate) {
+                    const dateMatches = rDate.getFullYear() === Number(selectedDate.slice(0, 4)) &&
+                        rDate.getMonth() === Number(selectedDate.slice(5, 7)) - 1 &&
+                        rDate.getDate() === Number(selectedDate.slice(8, 10));
+                    if (!dateMatches) return false;
+                    return filter !== 'due_only' || r.due > 0;
+                }
+                if (filter === 'today') {
+                    return rDate.toDateString() === now.toDateString();
+                } else if (filter === 'due_only') {
+                    return r.due > 0;
+                } else if (filter === '3days') {
+                    return (now - rDate) <= (3 * 86400000);
+                } else if (filter === 'week') {
+                    return (now - rDate) <= (7 * 86400000);
+                } else if (filter === 'month') {
+                    return rDate.getMonth() === now.getMonth() && rDate.getFullYear() === now.getFullYear();
+                } else if (filter === 'year') {
+                    return rDate.getFullYear() === now.getFullYear();
+                }
+                return true;
+            });
+
+            // Update Statistics
+            let todayBills = records.filter(r => new Date(r.timestamp).toDateString() === now.toDateString());
+            document.getElementById('stat-today-cnt').innerText = todayBills.length;
+            document.getElementById('stat-today-amt').innerText = '৳' + todayBills.reduce((a,b)=>a+b.payable, 0).toFixed(0);
+
+            let dueRecords = records.filter(r => r.due > 0);
+            document.getElementById('stat-due-cnt').innerText = `${dueRecords.length} Patients`;
+            document.getElementById('stat-tot-due').innerText = '৳' + dueRecords.reduce((a,b)=>a+b.due, 0).toFixed(0);
+
+            let d3 = records.filter(r => (now - new Date(r.timestamp)) <= 3 * 86400000);
+            document.getElementById('stat-3d-cnt').innerText = d3.length;
+            document.getElementById('stat-3d-amt').innerText = '৳' + d3.reduce((a,b)=>a+b.payable, 0).toFixed(0);
+
+            let wk = records.filter(r => (now - new Date(r.timestamp)) <= 7 * 86400000);
+            document.getElementById('stat-wk-cnt').innerText = wk.length;
+            document.getElementById('stat-wk-amt').innerText = '৳' + wk.reduce((a,b)=>a+b.payable, 0).toFixed(0);
+
+            let mo = records.filter(r => new Date(r.timestamp).getMonth() === now.getMonth());
+            document.getElementById('stat-mo-cnt').innerText = mo.length;
+            document.getElementById('stat-mo-amt').innerText = '৳' + mo.reduce((a,b)=>a+b.payable, 0).toFixed(0);
+
+            let yr = records.filter(r => new Date(r.timestamp).getFullYear() === now.getFullYear());
+            document.getElementById('stat-yr-cnt').innerText = yr.length;
+            document.getElementById('stat-yr-amt').innerText = '৳' + yr.reduce((a,b)=>a+b.payable, 0).toFixed(0);
+
+            // Render Table
+            const tbody = document.getElementById('reports-table-body');
+            tbody.innerHTML = '';
+
+            const totalPayable = filtered.reduce((sum, r) => sum + (Number(r.payable) || 0), 0);
+            const totalPaid = filtered.reduce((sum, r) => sum + (Number(r.paid) || 0), 0);
+            const totalDue = filtered.reduce((sum, r) => sum + (Number(r.due) || 0), 0);
+            document.getElementById('report-summary').innerHTML =
+                `Transactions: ${filtered.length} &nbsp;|&nbsp; To pay: ৳${totalPayable.toFixed(2)} &nbsp;|&nbsp; Paid: ৳${totalPaid.toFixed(2)} &nbsp;|&nbsp; Due: ৳${totalDue.toFixed(2)}`;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-slate-400 text-base">No bills found.</td></tr>`;
+                return;
+            }
+
+            filtered.forEach((r, idx) => {
+                let origIdx = records.indexOf(r);
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition";
+                tr.innerHTML = `
+                    <td class="p-4">
+                        <div class="font-bold text-slate-900">${r.dateStr}</div>
+                        <div class="font-mono text-xs text-slate-500">${r.invCode}</div>
+                    </td>
+                    <td class="p-4">
+                        <div class="font-bold text-teal-900 text-base">${r.name}</div>
+                        <div class="text-xs text-slate-500">PID ${r.pid} &nbsp;·&nbsp; ${r.mobile || '-'}</div>
+                    </td>
+                    <td class="p-4 text-right font-mono font-bold">৳${r.payable.toFixed(2)}</td>
+                    <td class="p-4 text-right font-mono text-emerald-600 font-bold">৳${r.paid.toFixed(2)}</td>
+                    <td class="p-4 text-right font-mono font-extrabold ${r.due > 0 ? 'text-rose-600' : 'text-slate-300'}">৳${r.due.toFixed(2)}</td>
+                    <td class="p-4 text-center">
+                        ${r.due > 0 ? `<button onclick="openDueModal(${origIdx})" class="btn-green px-4 py-2 text-sm">Collect Due</button>` : `<span class="inline-flex items-center gap-1.5 text-emerald-600 font-bold text-sm">${IC_CHECK} Paid</span>`}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function clearReportDate() {
+            document.getElementById('report-date').value = '';
+            loadReports();
+        }
+
+        function openDueModal(idx) {
+            curDueIdx = idx;
+            let records = JSON.parse(localStorage.getItem('amc_bill_records') || '[]');
+            let r = records[idx];
+            document.getElementById('m-name').innerText = r.name;
+            document.getElementById('m-due').innerText = '৳' + r.due.toFixed(2);
+            document.getElementById('m-input').value = r.due;
+            document.getElementById('due-modal').classList.remove('hidden');
+            document.getElementById('due-modal').classList.add('flex');
+        }
+
+        function closeDueModal() {
+            document.getElementById('due-modal').classList.add('hidden');
+            document.getElementById('due-modal').classList.remove('flex');
+        }
+
+        async function submitDue() {
+            let amt = parseFloat(document.getElementById('m-input').value) || 0;
+            if (amt <= 0) return;
+
+            let records = JSON.parse(localStorage.getItem('amc_bill_records') || '[]');
+            if (records[curDueIdx]) {
+                const updatedRecord = {
+                    ...records[curDueIdx],
+                    paid: records[curDueIdx].paid + amt
+                };
+                updatedRecord.due = Math.max(0, updatedRecord.payable - updatedRecord.paid);
+                try {
+                    await userDataRef().collection('bills').doc(String(updatedRecord.invCode)).set(updatedRecord);
+                    records[curDueIdx] = updatedRecord;
+                    localStorage.setItem('amc_bill_records', JSON.stringify(records));
+                    showToast("Due payment collected successfully!", "success");
+                } catch (error) {
+                    showToast('Payment could not be saved to Firebase. ' + error.message, 'error');
+                    console.error('Unable to save due payment to Firestore:', error);
+                    return;
+                }
+            }
+            closeDueModal();
+            loadReports();
+        }
+
+        function showToast(message, type = 'info') {
+            let toast = document.getElementById('custom-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'custom-toast';
+                toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-6 py-4 rounded-2xl shadow-xl text-white text-base font-bold transition-opacity duration-300 no-print';
+                document.body.appendChild(toast);
+            }
+
+            toast.className = `fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-6 py-4 rounded-2xl shadow-xl text-white text-base font-bold transition-opacity duration-300 no-print ${
+                type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-rose-600' : 'bg-slate-800'
+            }`;
+            toast.textContent = message;
+            toast.style.opacity = '1';
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

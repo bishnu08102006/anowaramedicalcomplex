@@ -19,6 +19,7 @@ import {
   X, 
   ChevronDown,
   ArrowUpDown,
+  ArrowRight,
   FileSpreadsheet,
   ShieldCheck,
   KeyRound,
@@ -625,12 +626,13 @@ export const ReceptionistDashboardPage: React.FC<ReceptionistDashboardPageProps>
             </div>
             {/* Receipt Generator Navigation Button */}
             <button
-              onClick={() => onNavigate('receipt-generator')}
-              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 shadow-sm transition cursor-pointer"
-              title={isBn ? "মানি রিসিট ও পরীক্ষা ফি জেনারেটরে যান" : "Go to Money Receipt & Fee Generator"}
+              onClick={() => onNavigate('billing-system')}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold text-white bg-gradient-to-r from-amber-500 via-orange-500 to-orange-600 hover:from-amber-600 hover:via-orange-600 hover:to-orange-700 shadow-md shadow-orange-900/15 transition cursor-pointer"
+              title={isBn ? "বিলিং সিস্টেম ও মানি রিসিট খুলুন" : "Open Billing System and Money Receipts"}
             >
-              <Receipt className="w-3.5 h-3.5 text-amber-200" />
-              <span>{isBn ? "রিসিট জেনারেটর" : "Receipt Generator"}</span>
+              <Receipt className="w-4 h-4 text-amber-100" />
+              <span>{isBn ? "বিলিং সিস্টেম" : "Billing System"}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
 
             <button

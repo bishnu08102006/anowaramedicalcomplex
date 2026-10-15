@@ -198,6 +198,19 @@ export const PAGES_SEO: Record<string, PageSeoConfig> = {
     categoryNameBn: 'রিসেপশন ডেস্ক',
     categoryNameEn: 'Reception Desk'
   },
+  'billing-system': {
+    path: '/billing-system',
+    titleBn: 'বিলিং সিস্টেম | আনোয়ারা মেডিকেল কমপ্লেক্স',
+    titleEn: 'Billing System | Anowara Medical Complex',
+    descBn: 'আনোয়ারা মেডিকেল কমপ্লেক্সের বিলিং সিস্টেম।',
+    descEn: 'Anowara Medical Complex billing system.',
+    keywordsBn: 'বিলিং সিস্টেম',
+    keywordsEn: 'billing system',
+    priority: '0.2',
+    changefreq: 'daily',
+    categoryNameBn: 'বিলিং সিস্টেম',
+    categoryNameEn: 'Billing System'
+  },
   admin: {
     path: '/admin',
     titleBn: 'প্রশাসনিক কন্ট্রোল প্যানেল | আনোয়ারা মেডিকেল কমপ্লেক্স',
@@ -258,7 +271,7 @@ export function generatePageJsonLd(pageId: string): string {
     },
     hasMap: 'https://maps.app.goo.gl/ESVAyVjEDpS2585JA',
     sameAs: [
-      'https://www.facebook.com/anowaramedicalcomplex01/'
+      'https://www.facebook.com/anowara.hospital'
     ],
     contactPoint: [
       {
@@ -428,7 +441,7 @@ export function generatePageJsonLd(pageId: string): string {
  * Generate valid XML Sitemap for Google Search Console & Web Crawlers
  */
 export function generateXmlSitemap(): string {
-  const publicPages = Object.entries(PAGES_SEO).filter(([key]) => key !== 'admin' && key !== 'receptionist');
+  const publicPages = Object.entries(PAGES_SEO).filter(([key]) => key !== 'admin' && key !== 'receptionist' && key !== 'billing-system');
   const now = new Date().toISOString().split('T')[0];
 
   const urlsXml = publicPages.flatMap(([key, cfg]) => {

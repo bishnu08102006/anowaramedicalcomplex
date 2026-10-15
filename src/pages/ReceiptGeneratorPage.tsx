@@ -11,7 +11,6 @@ import {
   Clock, 
   User, 
   Phone, 
-  CreditCard, 
   Sparkles, 
   FileText, 
   CheckCircle2, 
@@ -19,7 +18,6 @@ import {
   Stethoscope,
   Activity,
   Layers,
-  ChevronRight,
   Calculator,
   RefreshCw
 } from 'lucide-react';
@@ -40,7 +38,6 @@ export const ReceiptGeneratorPage: React.FC<ReceiptGeneratorPageProps> = ({
 }) => {
   const { isBn } = useLanguage();
   const { appointments, diagnosticTests, doctors } = useData();
-
   // Receipt builder state
   const [patientName, setPatientName] = useState('');
   const [patientPhone, setPatientPhone] = useState('');
@@ -146,7 +143,14 @@ export const ReceiptGeneratorPage: React.FC<ReceiptGeneratorPageProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => onNavigate('billing-system')}
+              className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white px-4 py-2.5 rounded-xl text-xs font-extrabold transition flex items-center gap-2 shadow-md shadow-amber-900/15 cursor-pointer"
+            >
+              <span>{isBn ? "বিলিং সিস্টেম খুলুন" : "Open Billing System"}</span>
+            </button>
             <button
               onClick={handlePrintReceipt}
               className="bg-[#0E3A53] hover:bg-[#0A2A3D] text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -180,7 +184,7 @@ export const ReceiptGeneratorPage: React.FC<ReceiptGeneratorPageProps> = ({
                 <span>{isBn ? "রোগীর তথ্য ও বুকিং নির্বাচন" : "Patient Information"}</span>
               </h4>
 
-              {appointments.length > 0 && (
+                  {appointments.length > 0 && (
                 <div>
                   <label className="block text-[11px] font-semibold text-gray-600 mb-1">
                     {isBn ? "বুকিং করা রোগী থেকে বাছাই করুন:" : "Quick select from today's patients:"}

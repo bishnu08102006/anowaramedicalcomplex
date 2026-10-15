@@ -145,7 +145,7 @@ export const Hero: React.FC<HeroProps> = ({ onNavigate }) => {
             </a>
 
             <a
-              href="https://www.facebook.com/anowaramedicalcomplex01/"
+              href="https://www.facebook.com/anowara.hospital"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-[#1877F2] text-white/90 hover:text-white flex items-center gap-1.5 font-semibold transition bg-white/10 hover:bg-[#1877F2] px-2.5 py-1 rounded-full border border-white/15"
