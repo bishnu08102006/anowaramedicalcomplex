@@ -148,7 +148,44 @@
 
                     <div class="mt-4">
                         <label class="lbl" for="p-doc">Doctor</label>
-                        <input type="text" id="p-doc" oninput="syncPreview()" placeholder="Doctor's name" class="field">
+                        <input type="text" id="p-doc" list="doctor-options" oninput="syncPreview()" placeholder="Search or type a doctor's name" autocomplete="off" class="field">
+                        <datalist id="doctor-options">
+                            <option value="Md. Shariear Islam MBBS(RMC) CMU. PGT">
+                            <option value="Farha Anjum Deeba-MBBS(DU),PGT(Gynae&amp;Obs)">
+                            <option value="Md. Shahidul Haque MBBS,BCS,FCPS(Pade)">
+                            <option value="Alpona Sarker MBBS,M-Phil, DMU">
+                            <option value="Md.Maruf Al-Hasan MBBS,BCS(HEALTH), D-Ortho(Orthopedics)">
+                            <option value="Shahadat Hossain MBBS,CMU(ULTRA)">
+                            <option value="Asst.Professor Dr.MD.Nazmul Huda MBBS,DPH,DDV(DU)">
+                            <option value="AL ANAS SARKAR RIJVEE MBBS (DU), CMU (ULTRA)">
+                            <option value="Harun-Or-Rashied DMF, DHMS(BHB Dhaka)">
+                            <option value="Selina Akter MBBS(CMC),BCS(health),MS(Gynae &amp; Obs),C-ULTRA">
+                            <option value="Dilara Begum MD(UK),FCPGS(Gynae&amp;Obs)">
+                            <option value="Abu Naser Mohammad Kibria MBBS,PGT,CCD(BIRDEM),CMU">
+                            <option value="Ruksana Azim MBBS,BCS (Health) CIVIL SURGEON">
+                            <option value="Md. Hasibur Rahman Bhuiyan MBBS(Dhaka),BCS(health),FCPS(SURGERY),MS UROLOGY">
+                            <option value="Rayhan Bhuiyan MBBS,CMU">
+                            <option value="Md. Mehedi Hasan MBBS, BCS (HEALTH), MD (CARDIOLOGY)">
+                            <option value="Md. Nadirul Amin MBBS(CU),DLO(ENT),BCS(health)">
+                            <option value="Deluar Hossan DMF">
+                            <option value="Sajib Datta RMP">
+                            <option value="Rokanuzzaman Bhuyian MBBS, BCS, FCPS, MD">
+                            <option value="Sufia Akter MBBS, FCPS(Medicine),MD(Cardiology),MACP(America),BCS(Health)">
+                            <option value="M.Mizanur Rahman MD(UK),FCPGS(Paediatric),Ph.D(Neonatologist),ATP(PAED)">
+                            <option value="S.M. Shahidul Islam MBBS(Dhaka),FCGP(BD),C-ULTRA(B.I.U.R)">
+                            <option value="Tasfia Atyia MBBS, CMU">
+                            <option value="Muhammad Ibrahim Khalil MBBS(RpMC). CCGP, DMU(Ultra)">
+                            <option value="ASHIQUE-E-RABBI MBBS,CMU">
+                            <option value="Protik Sarker MBBS(DU),CMU">
+                            <option value="Md. Rasel Ahmed MBBS,CCD(Birdem),PGT(Medicine),CMU(Ultra)">
+                            <option value="MAHMOOD RAHMAN MBBS,BCS,FCPS,CMU,CCD">
+                            <option value="Md. Abdul Motalib MBBS(DU), BCS(Health), D-Card (CARDIOLOGY), BSMMU, PGT (Medicine)">
+                            <option value="Zillur Rahman MBBS,CCD,MPH (NIPSOM),FCGP,CMU,PGT(Child Health)">
+                            <option value="Md. Jillur Rahman MBBS, MPH,FCGP,CCD, FCPS (Medicine) P-1, PGT (Child),CMU">
+                            <option value="Kazi Humayun Kabir MBBS, BCS (Health), FCPS (Neurology), MD (Medicine – Thesis)">
+                            <option value="Dr. Tahmina Tanoaj MBBS,CMU">
+                        </datalist>
+                        <p class="mt-1 text-sm text-slate-500">Type to search and select a doctor, or enter a name manually.</p>
                     </div>
 
                     <details class="mt-5 group">
