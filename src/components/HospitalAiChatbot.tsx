@@ -7,37 +7,13 @@ import {
   RotateCcw, 
   Bot, 
   User, 
-  MapPin, 
-  Phone, 
-  Stethoscope, 
-  Activity, 
   Loader2,
   ChevronDown,
-  Calendar,
-  ShieldCheck,
-  FileText
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useData } from '../context/DataContext';
 import { Doctor } from '../data/doctors';
 import { DiagnosticTest } from '../data/tests';
-
-/**
- * ------------------------------------------------------------------
- * GEMINI API CONFIGURATION PLACEHOLDERS
- * Replace these placeholder values with your Gemini API credentials if desired.
- * Note: The app automatically detects environment/runtime keys as well.
- * ------------------------------------------------------------------
- */
-export const YOUR_GEMINI_API_KEY = "YOUR_GEMINI_API_KEY";
-export const YOUR_GEMINI_KEY_NAME = "YOUR_KEY_NAME";
-
-// Supported active Gemini flash models in order of priority
-const CANDIDATE_MODELS = [
-  'gemini-3.6-flash',
-  'gemini-3.8-flash',
-  'gemini-flash-latest'
-];
 
 interface ChatMessage {
   id: string;
@@ -46,13 +22,9 @@ interface ChatMessage {
   timestamp: string;
 }
 
-interface HospitalAiChatbotProps {
-  onNavigate?: (page: any) => void;
-}
-
-export const HospitalAiChatbot: React.FC<HospitalAiChatbotProps> = ({ onNavigate }) => {
+export const HospitalAiChatbot: React.FC = () => {
   const { isBn } = useLanguage();
-  const { doctors, diagnosticTests, notices } = useData();
+  const { doctors, diagnosticTests } = useData();
 
   const [isOpen, setIsOpen] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
@@ -69,8 +41,8 @@ export const HospitalAiChatbot: React.FC<HospitalAiChatbotProps> = ({ onNavigate
           id: 'welcome-msg',
           role: 'model',
           text: isBn
-            ? "আসসালামু আলাইকুম! আমি **আনোয়ারা মেডিকেল কমপ্লেক্স**-এর বুদ্ধিমান এআই সহকারী। 🏥✨\n\nআমি আপনাকে আন্তরিকভাবে সাহায্য করতে এখানে আছি। আপনি জানতে পারেন:\n• **বিশেষজ্ঞ ডাক্তারদের তালিকা, ভিজিটিং দিন ও সময়সূচি**\n• **রোগের ধরন অনুযায়ী কোন ডাক্তারের কাছে যাবেন**\n• **প্যাথলজি ও ডায়াগনস্টিক ল্যাব টেস্টের সঠিক ফি ও ডেলিভারি সময়**\n• **২৪ ঘণ্টা জরুরি সেবা, অ্যাম্বুলেন্স ও হটলাইন নম্বর**\n• **ওয়েবসাইটে অনলাইনে ডাক্তারের সিরিয়াল বুকিং ও নোটিশ ডাউনলোড**\n• **হাসপাতালের অবস্থান ও যোগাযোগের তথ্য**\n\nবলুন, আজ আপনাকে কীভাবে সহায়তা করতে পারি?"
-            : "Hello and welcome to **Anowara Medical Complex**! 🏥✨\n\nI am your intelligent AI healthcare assistant. I can thoughtfully assist you with:\n• Specialist doctor visiting schedules and chamber info\n• Guidance on which specialist to consult based on your symptoms\n• Diagnostic lab test pricing, fasting guidelines, and turnaround times\n• 24/7 Emergency care, hospital ambulance, and hotlines\n• Website features (booking online serials, downloading notices in PDF)\n• Hospital location in Palash, Narsingdi\n\nHow may I help you today?",
+            ? "আসসালামু আলাইকুম! আমি **আনোয়ারা মেডিকেল কমপ্লেক্স**-এর এআই সহকারী। 🏥✨\n\nহাসপাতাল, স্বাস্থ্য বা অন্য যেকোনো বিষয়ে বাংলায় বা ইংরেজিতে প্রশ্ন করুন—আমি সাহায্য করার চেষ্টা করব।\n\nডাক্তারদের সময়সূচি, টেস্টের ফি, জরুরি সেবা বা হাসপাতালের ঠিকানা সম্পর্কেও জানতে পারেন।"
+            : "Hello and welcome to **Anowara Medical Complex**! 🏥✨\n\nAsk me anything in English or Bengali. I can help with general questions as well as doctors, test prices, emergency services, and hospital information.",
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);
@@ -85,7 +57,7 @@ export const HospitalAiChatbot: React.FC<HospitalAiChatbotProps> = ({ onNavigate
     }
   }, [messages, isOpen]);
 
-  // Construct comprehensive system instruction grounded strictly in hospital information & intelligent persona
+  // Ground hospital-specific answers in the live site data while allowing general questions.
   const buildSystemInstruction = (doctorList: Doctor[], testList: DiagnosticTest[]): string => {
     const doctorsSummary = (doctorList || []).map(d => 
       `- ${d.name} (${d.nameEn || ''}): ${d.specialty} | ডিগ্রি: ${d.degree || ''} | চেম্বার সময়: ${d.time || 'নির্ধারিত সময়ে'} | দিন: ${d.days ? d.days.join(', ') : 'নির্ধারিত দিনে'} | রুম: ${d.room || 'চেম্বার'} | সিরিয়াল নম্বর: ${d.phone || '01972-692504 / 01944-874304'}`
@@ -97,21 +69,17 @@ export const HospitalAiChatbot: React.FC<HospitalAiChatbotProps> = ({ onNavigate
 
     return `You are the thoughtful, highly empathetic, and intelligent official AI Health Assistant for Anowara Medical Complex (আনোয়ারা মেডিকেল কমপ্লেক্স), located in Palash, Narsingdi, Bangladesh.
 
-CORE PERSONALITY & INTELLIGENT THINKING RULES:
-1. THINK BEFORE ANSWERING: Do NOT simply dump raw data. Act like a knowledgeable, caring hospital information consultant.
-2. GREETINGS & CASUAL COURTESY: When someone says "Hello", "Hi", "হ্যালো", "হাই", "কেমন আছেন", "আসসালামু আলাইকুম", "শুভ সকাল", or "ধন্যবাদ", respond warmly, politely, and naturally like a caring human assistant, acknowledging their greeting and welcoming them to Anowara Medical Complex.
-3. SYMPTOM REASONING: If a user describes physical symptoms (e.g., chest pain, baby fever, pregnancy checkup, joint pain, skin rash), explain what type of specialist they should see (e.g. Cardiologist for chest pain, Pediatrician for child fever, Gynecologist for maternity), suggest relevant doctors from our hospital list, provide their chamber schedule and phone numbers, and remind them that our Emergency Department is open 24 hours.
-4. MEDICAL TEST PREPARATION & EDUCATION: When asked about a diagnostic test (e.g. CBC, Ultrasound, Creatinine, Lipid profile, ECG), explain simply why doctors order it, whether fasting is required, and give our hospital's exact fee and turnaround time.
-5. WEBSITE NAVIGATION & FEATURES: Explain how patients can use our website:
+GENERAL ASSISTANT RULES:
+1. Answer questions on any topic; do not refuse solely because a question is unrelated to the hospital. Be useful, accurate, respectful, and clear.
+2. Understand Bengali and English, including mixed-language messages. Reply in the language the user used; if the user requests both languages, provide the answer in both.
+3. For greetings and thanks, respond warmly and naturally.
+4. For medical questions, give general educational information, do not claim to diagnose or replace a clinician, and advise urgent in-person care for emergency symptoms. Do not invent medical facts.
+5. Use the hospital information below for hospital-specific questions. Do not invent doctors, schedules, test prices, or hospital policies; say when information is unavailable and provide the relevant contact number.
+6. Explain how patients can use our website:
    - How to book a serial online (go to the "সিরিয়াল বুকিং" / Appointment page and fill the form).
    - How to download doctor schedule lists or notices in PDF.
    - How to verify hospital staff ID card via QR code.
    - Where to find health blogs and announcements.
-6. STRICT REFUSAL OF OUT-OF-SCOPE TOPICS:
-   - If the user asks you to do something completely unrelated to hospital services or healthcare (e.g., "write python code", "solve math homework", "write a movie essay", "discuss political leaders", "generate creative AI stories/crypto/finance"), POLITELY REFUSE.
-   - Refusal in Bengali: "দুঃখিত, আমি আনোয়ারা মেডিকেল কমপ্লেক্সের চিকিৎসা সেবা, বিশেষজ্ঞ ডাক্তারদের শিডিউল, টেস্টের ফি এবং হাসপাতালের তথ্যাবলী ও ওয়েবসাইট সহায়তার জন্য বিশেষভাবে নিয়োজিত। হাসপাতাল বা স্বাস্থ্য সম্পর্কিত যেকোনো তথ্যে আমি আপনাকে সাহায্য করতে প্রস্তুত।"
-   - Refusal in English: "I apologize, but I am specifically dedicated to providing information and assistance regarding Anowara Medical Complex's healthcare services, doctors, diagnostic tests, and hospital facilities. How may I assist you with our hospital?"
-7. LANGUAGE & TONE: Prefer standard, respectful Bengali (using আপনি/আপনার). If the user communicates in English, answer fluently and courteously in English.
 
 HOSPITAL PROFILE & CONTACTS:
 - Hospital Name: আনোয়ারা মেডিকেল কমপ্লেক্স (Anowara Medical Complex)
@@ -132,76 +100,14 @@ HOSPITAL PROFILE & CONTACTS:
   * সার্বক্ষণিক ইন-হাউজ ফার্মেসি
   * অভিজ্ঞ বিশেষজ্ঞ কনসালট্যান্ট চেম্বার
 
-DOCTORS & VISITING SCHEDULE:
+DOCTORS & VISITING SCHEDULE (use only when known to answer hospital questions):
 ${doctorsSummary}
 
-DIAGNOSTIC TEST CHARGES & PREPARATION:
+DIAGNOSTIC TEST CHARGES & PREPARATION (use only when known to answer hospital questions):
 ${testsSummary}`;
   };
 
-  // Smart local reasoning fallback when network is offline or key missing
-  const generateIntelligentLocalFallback = (promptText: string): string => {
-    const text = promptText.toLowerCase().trim();
-
-    // 1. Greetings & Courtesy
-    if (/^(হাই|হ্যালো|hello|hi|helo|hey|কেমন আছেন|সালাম|আসসালামু|নমস্কার|good morning|good evening)/i.test(text)) {
-      return "ওয়ালাইকুম আসসালাম! হ্যালো! আলহামদুলিল্লাহ, আমি ভালো আছি। আশা করি আপনিও সুস্থ ও ভালো আছেন। 🌸\n\n**আনোয়ারা মেডিকেল কমপ্লেক্স (পলাশ, নরসিংদী)**-এর পক্ষ থেকে আপনাকে উষ্ণ স্বাগতম!\n\nআজ আপনাকে কীভাবে সাহায্য করতে পারি? বিশেষজ্ঞ ডাক্তারের সময়সূচি, কোনো টেস্টের ফি, কিংবা জরুরি অ্যাম্বুলেন্স প্রয়োজন হলে জানান।";
-    }
-
-    if (text.includes('ধন্যবাদ') || text.includes('thank') || text.includes('shukriya')) {
-      return "আপনাকেও আন্তরিক ধন্যবাদ! আপনার বা আপনার পরিবারের সুস্বাস্থ্যই আমাদের প্রধান লক্ষ্য। আনোয়ারা মেডিকেল কমপ্লেক্স সর্বদা আপনার পাশে আছে। প্রয়োজনে আবার জানাবেন।";
-    }
-
-    // 2. Out-of-Scope non-hospital tasks (code, homework, politics, non-medical AI generation)
-    if (text.includes('কোড') || text.includes('code') || text.includes('python') || text.includes('javascript') || text.includes('অংক') || text.includes('math') || text.includes('রাজনীতি') || text.includes('কবিতা') || text.includes('গল্প') || text.includes('essay')) {
-      return "দুঃখিত, আমি শুধুমাত্র **আনোয়ারা মেডিকেল কমপ্লেক্স**-এর চিকিৎসা সেবা, বিশেষজ্ঞ ডাক্তারদের শিডিউল, টেস্টের মূল্য তালিকা এবং হাসপাতালের ওয়েবসাইট সম্পর্কিত তথ্য সহায়তার জন্য বিশেষভাবে দায়িত্বপ্রাপ্ত।\n\nহাসপাতাল বা স্বাস্থ্য সম্পর্কিত যেকোনো তথ্যে আমি আপনাকে সাহায্য করতে প্রস্তুত।";
-    }
-
-    // 3. Symptoms & Doctor Recommendations
-    if (text.includes('বুকে ব্যথা') || text.includes('হার্ট') || text.includes('heart') || text.includes('chest pain')) {
-      return "বুকে ব্যথা একটি অত্যন্ত সংবেদনশীল লক্ষণ। এটি হলে কোনো অবহেলা না করে অবিলম্বে আমাদের হাসপাতালে আসুন।\n\n• **জরুরি বিভাগ:** আমাদের জরুরি বিভাগ ২৪ ঘণ্টা খোলা রয়েছে (হটলাইন: **01972-692504**)।\n• **বিশেষজ্ঞ চিকিৎসক:** আমাদের হৃদরোগ ও মেডিসিন কনসালট্যান্ট চেম্বার পরিচালনা করেন।\n• **পরীক্ষা:** তাৎক্ষণিক ১২-চ্যানেল ইসিজি (ECG) ও ট্রপোনিন-আই টেস্টের সুবিধা রয়েছে।\n\nঅবস্থা গুরুতর হলে অবিলম্বে হাসপাতালে আসার পরামর্শ দেওয়া হচ্ছে।";
-    }
-
-    if (text.includes('বাচ্চা') || text.includes('শিশু') || text.includes('baby') || text.includes('child') || text.includes('জ্বর')) {
-      return "বাচ্চাদের অসুস্থতা বা জ্বরের ক্ষেত্রে আমাদের শিশু রোগ বিশেষজ্ঞ কনসালট্যান্টের সাথে পরামর্শ করতে পারেন।\n\n• **শিশু স্বাস্থ্য বিভাগ:** অভিজ্ঞ শিশু রোগ বিশেষজ্ঞ নিয়মিত চেম্বার করেন।\n• **জরুরি সেবা:** রাতে বা জরুরি সময়ে আমাদের জরুরি মেডিকেল অফিসার উপস্থিত থাকেন।\n• **সিরিয়াল বুকিং:** **01944-874304** বা **01972-692504** নম্বরে কল করে শিশু বিশেষজ্ঞের সিরিয়াল নিশ্চিত করতে পারেন।";
-    }
-
-    if (text.includes('গাইনী') || text.includes('মহিলা') || text.includes('প্রসূতি') || text.includes('pregnancy') || text.includes('gynae')) {
-      return "আমাদের হাসপাতালে গাইনী ও প্রসূতি রোগের অভিজ্ঞ কনসালট্যান্ট চেম্বার পরিচালনা করেন এবং নিয়মিত নরমাল ডেলিভারি ও সিজারিয়ান অপারেশনের আধুনিক সুবিধা রয়েছে।\n\n• ৪ডি কালার ডপলার আল্ট্রাসনোগ্রাম (USG of Pregnancy Profile) প্রতিদিন বিশেষজ্ঞ সনোলজিস্ট দ্বারা সম্পন্ন করা হয়।\n• সিরিয়াল বুকিং হটলাইন: **01944-874304**।";
-    }
-
-    // 4. Doctor Schedules
-    if (text.includes('ডাক্তার') || text.includes('doctor') || text.includes('শিডিউল') || text.includes('চেম্বার') || text.includes('তালিকা')) {
-      const topDocs = doctors.slice(0, 5).map(d => `• **${d.name}** (${d.specialty})\n  ডিগ্রি: ${d.degree} | চেম্বার: ${d.time}`).join('\n\n');
-      return `🏥 **আনোয়ারা মেডিকেল কমপ্লেক্সের বিশেষজ্ঞ চিকিৎসকবৃন্দ:**\n\n${topDocs}\n\nওয়েবসাইটের **ডাক্তার তালিকা** পেজে সকল বিশেষজ্ঞের পূর্ণ বিবরণ রয়েছে। সিরিয়াল বুকিংয়ের জন্য কল করুন: **01944-874304** অথবা **01972-692504**।`;
-    }
-
-    // 5. Test Prices & Diagnostics
-    if (text.includes('টেস্ট') || text.includes('ফি') || text.includes('price') || text.includes('খরচ') || text.includes('ল্যাব') || text.includes('test')) {
-      const topTests = diagnosticTests.slice(0, 7).map(t => `• **${t.name}** (${t.banglaName || ''}): ${t.price} (ডেলিভারি: ${t.deliveryTime})`).join('\n');
-      return `🧪 **আনোয়ারা ডিজিটাল ডায়াগনস্টিক ল্যাব টেস্টের ফি:**\n\n${topTests}\n\nআমাদের ল্যাব প্রতিদিন সকাল ৮:০০ হতে রাত ১০:০০ পর্যন্ত খোলা থাকে। ওয়েবসাইটের **ডায়াগনস্টিক** পেজে সকল টেস্টের তালিকা রয়েছে।`;
-    }
-
-    // 6. Website Issues & Instructions
-    if (text.includes('ওয়েবসাইট') || text.includes('website') || text.includes('সিরিয়াল বুকিং') || text.includes('নোটিশ') || text.includes('আইডি কার্ড') || text.includes('ভেরিফাই')) {
-      return `💻 **ওয়েবসাইট ব্যবহারের নির্দেশনা:**\n\n• **সিরিয়াল বুকিং:** মেন্যুর "সিরিয়াল বুকিং" অপশনে গিয়ে ফর্ম পূরণ করলেই আমাদের রিসেপশন ডেস্ক আপনার সিরিয়াল নিশ্চিত করবে।\n• **নোটিশ ও সার্কুলার:** নোটিশ পেজ থেকে হাসপাতালের যেকোনো অফিসিয়াল সার্কুলার সরাসরি PDF আকারে ডাউনলোড ও প্রিন্ট করতে পারেন।\n• **স্টাফ ভেরিফিকেশন:** আইডি কার্ডের কিউআর কোড স্ক্যান করে বা আইডি নম্বর দিয়ে স্টাফ পরিচিতি যাচাই করা যায়।`;
-    }
-
-    // 7. Emergency & Ambulance
-    if (text.includes('অ্যাম্বুলেন্স') || text.includes('জরুরি') || text.includes('হটলাইন') || text.includes('ফোন') || text.includes('emergency') || text.includes('phone') || text.includes('কল')) {
-      return `🚑 **আনোয়ারা মেডিকেল কমপ্লেক্স জরুরি হটলাইন (২৪ ঘণ্টা চালু):**\n\n• **জরুরি ও অ্যাম্বুলেন্স:** **01972-692504**\n• **সিরিয়াল ও রিসেপশন:** **01944-874304**\n• **হাসপাতাল কর্তৃপক্ষ:** **01712-692504**\n\nআমাদের নিজস্ব সার্বক্ষণিক অ্যাম্বুলেন্স জরুরি রোগী আনা-নেওয়ার জন্য প্রস্তুত রয়েছে।`;
-    }
-
-    // 8. Location & Address
-    if (text.includes('লোকেশন') || text.includes('ঠিকানা') || text.includes('কোথায়') || text.includes('location') || text.includes('address') || text.includes('নরসিংদী') || text.includes('পলাশ')) {
-      return `📍 **হাসপাতালের অবস্থান ও ঠিকানা:**\n\n**আনোয়ারা মেডিকেল কমপ্লেক্স**\nওয়াপদা সদর রোড, মেডিকেল মোড়, পলাশ, নরসিংদী।\n\nপলাশ মেডিকেল মোড়ে নেমেই ওয়াপদা সদর রোডে আমাদের হাসপাতাল ভবন অবস্থিত। যে কোনো তথ্যে সরাসরি রিসেপশনে যোগাযোগ করতে পারেন: **01972-692504**।`;
-    }
-
-    // Default intelligent response
-    return `আমি **আনোয়ারা মেডিকেল কমপ্লেক্স**-এর সহকারী। আপনার প্রশ্নটি পেয়েছি। হাসপাতাল সম্পর্কিত যেকোনো তথ্য—যেমন ডাক্তারদের তালিকা ও ভিজিটিং সময়, ডায়াগনস্টিক টেস্টের ফি, ২৪ ঘণ্টা অ্যাম্বুলেন্স সেবা বা লোকেশন—সম্পর্কে জানতে চাইলে অনুগ্রহ করে বিস্তারিত বলুন, আমি সাথে সাথে জানিয়ে দেব।`;
-  };
-
-  // Send message handler connecting to Gemini API with candidate model fallback
+  // Send chat messages through the server-side AI endpoint
   const handleSendMessage = async (textToSend?: string) => {
     const query = (textToSend || inputMessage).trim();
     if (!query || isLoading) return;
@@ -218,11 +124,6 @@ ${testsSummary}`;
     setInputMessage('');
     setIsLoading(true);
 
-    // Retrieve active API Key from environment or placeholder
-    const effectiveApiKey =
-      (import.meta.env.VITE_GEMINI_API_KEY as string) ||
-      (YOUR_GEMINI_API_KEY && YOUR_GEMINI_API_KEY !== "YOUR_GEMINI_API_KEY" ? YOUR_GEMINI_API_KEY : "");
-
     // Prepare system instruction
     const systemInstructionText = buildSystemInstruction(doctors, diagnosticTests);
 
@@ -235,9 +136,7 @@ ${testsSummary}`;
         text: m.text
       }));
 
-    let generatedText: string | null = null;
-
-    // 1. Primary: Call secure server-side proxy route /api/chat (no CORS, no browser referrer restrictions)
+    let generatedText: string;
     try {
       const serverResponse = await fetch('/api/chat', {
         method: 'POST',
@@ -245,57 +144,25 @@ ${testsSummary}`;
         body: JSON.stringify({
           message: query,
           history: contentsPayload,
-          systemInstruction: systemInstructionText,
-          customKey: (YOUR_GEMINI_API_KEY && YOUR_GEMINI_API_KEY !== 'YOUR_GEMINI_API_KEY') ? YOUR_GEMINI_API_KEY : undefined
+          systemInstruction: systemInstructionText
         })
       });
 
-      if (serverResponse.ok) {
-        const data = await serverResponse.json();
-        if (data?.text && data.text.trim()) {
-          generatedText = data.text.trim();
-        }
+      const data = await serverResponse.json();
+      if (!serverResponse.ok || typeof data?.text !== 'string' || !data.text.trim()) {
+        throw new Error(data?.error || 'AI service did not return an answer');
       }
-    } catch (serverErr) {
-      console.warn('[Chatbot Client] Server /api/chat call notice:', serverErr);
-    }
-
-    // 2. Secondary client-side fallback if server route didn't return text and effectiveApiKey exists
-    if (!generatedText && effectiveApiKey && effectiveApiKey !== 'YOUR_GEMINI_API_KEY') {
-      for (const model of CANDIDATE_MODELS) {
-        try {
-          const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(effectiveApiKey)}`;
-          const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              system_instruction: { parts: [{ text: systemInstructionText }] },
-              contents: contentsPayload.map(m => ({
-                role: m.role === 'user' ? 'user' : 'model',
-                parts: [{ text: m.text }]
-              })),
-              generationConfig: { temperature: 0.35, maxOutputTokens: 800 }
-            })
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (text && text.trim()) {
-              generatedText = text.trim();
-              break;
-            }
-          }
-        } catch {
-          // silently continue to next model or intelligent fallback
-        }
-      }
-    }
-
-    // 3. Guaranteed intelligent healthcare reasoning engine fallback
-    if (!generatedText) {
-      await new Promise(res => setTimeout(res, 350));
-      generatedText = generateIntelligentLocalFallback(query);
+      generatedText = data.text.trim();
+    } catch (error) {
+      console.error('[Chatbot] Unable to get an AI response:', error);
+      const isNotConfigured = error instanceof Error && error.message.includes('not configured');
+      generatedText = isNotConfigured
+        ? isBn
+          ? 'এআই চ্যাট চালু করতে সার্ভারে একটি বৈধ Gemini API key সেট করতে হবে। সেটআপের জন্য ওয়েবসাইট কর্তৃপক্ষের সঙ্গে যোগাযোগ করুন।'
+          : 'AI chat needs a valid Gemini API key on the server. Please contact the website administrator to enable it.'
+        : isBn
+          ? 'দুঃখিত, এই মুহূর্তে এআই সেবার সঙ্গে সংযোগ করা যাচ্ছে না। অনুগ্রহ করে পরে আবার চেষ্টা করুন।'
+          : 'Sorry, the AI service is unavailable right now. Please try again later.';
     }
 
     const modelMessage: ChatMessage = {
@@ -315,8 +182,8 @@ ${testsSummary}`;
         id: `welcome-${Date.now()}`,
         role: 'model',
         text: isBn
-          ? "চ্যাট রিসেট করা হয়েছে। আমি **আনোয়ারা মেডিকেল কমপ্লেক্স**-এর সহকারী। ডাক্তার, টেস্ট বা সেবা সম্পর্কে যেকোনো তথ্য জানতে চান?"
-          : "Chat has been reset. How may I assist you with Anowara Medical Complex today?",
+          ? "চ্যাট রিসেট করা হয়েছে। বাংলা বা ইংরেজিতে যেকোনো প্রশ্ন করুন—আমি সাহায্য করব।"
+          : "Chat has been reset. Ask me anything in English or Bengali.",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }
     ]);
@@ -324,11 +191,11 @@ ${testsSummary}`;
 
   // Quick Action Buttons
   const quickPrompts = [
-    { label: isBn ? "🩺 ডাক্তারদের শিডিউল" : "🩺 Doctors Schedule", query: "ডাক্তারদের শিডিউল ও তালিকা দেখতে চাই" },
-    { label: isBn ? "🧪 টেস্টের মূল্য তালিকা" : "🧪 Test Prices", query: "ডায়াগনস্টিক ল্যাব টেস্টের ফি কত?" },
-    { label: isBn ? "🚑 জরুরি অ্যাম্বুলেন্স" : "🚑 Ambulance", query: "জরুরি অ্যাম্বুলেন্স ও রিসেপশন নম্বর কী?" },
-    { label: isBn ? "📍 হাসপাতালের অবস্থান" : "📍 Location", query: "হাসপাতালের ঠিকানা ও অবস্থান কোথায়?" },
-    { label: isBn ? "📅 সিরিয়াল বুকিং নিয়ম" : "📅 Serial Booking", query: "অনলাইনে কীভাবে ডাক্তারের সিরিয়াল বুকিং করব?" },
+    { label: isBn ? "🩺 ডাক্তারদের শিডিউল" : "🩺 Doctors Schedule", query: isBn ? "ডাক্তারদের শিডিউল ও তালিকা দেখতে চাই" : "Show me the doctors' schedules and list" },
+    { label: isBn ? "🧪 টেস্টের মূল্য তালিকা" : "🧪 Test Prices", query: isBn ? "ডায়াগনস্টিক ল্যাব টেস্টের ফি কত?" : "What are the diagnostic test prices?" },
+    { label: isBn ? "🚑 জরুরি অ্যাম্বুলেন্স" : "🚑 Ambulance", query: isBn ? "জরুরি অ্যাম্বুলেন্স ও রিসেপশন নম্বর কী?" : "What are the emergency and ambulance phone numbers?" },
+    { label: isBn ? "📍 হাসপাতালের অবস্থান" : "📍 Location", query: isBn ? "হাসপাতালের ঠিকানা ও অবস্থান কোথায়?" : "Where is the hospital located?" },
+    { label: isBn ? "📅 সিরিয়াল বুকিং নিয়ম" : "📅 Serial Booking", query: isBn ? "অনলাইনে কীভাবে ডাক্তারের সিরিয়াল বুকিং করব?" : "How do I book a doctor appointment online?" },
   ];
 
   return (
@@ -393,7 +260,7 @@ ${testsSummary}`;
                 <h3 className="font-bold text-sm sm:text-base leading-tight flex items-center gap-1.5">
                   <span>{isBn ? "আনোয়ারা এআই সহকারী" : "Anowara AI Assistant"}</span>
                   <span className="px-1.5 py-0.2 rounded-md bg-amber-400/20 text-amber-300 border border-amber-300/30 text-[9px] font-bold">
-                    Active AI
+                    {isBn ? 'সক্রিয় এআই' : 'Active AI'}
                   </span>
                 </h3>
                 <p className="text-[11px] text-cyan-100/80 flex items-center gap-1 mt-0.5">
@@ -423,8 +290,12 @@ ${testsSummary}`;
 
           {/* Quick Notice Tag */}
           <div className="bg-amber-50/90 border-b border-amber-200/60 px-3 py-1.5 text-[10.5px] text-amber-900 flex items-center justify-between shrink-0 font-medium">
-            <span className="truncate">🏥 আনোয়ারা মেডিকেল কমপ্লেক্স ও চিকিৎসা তথ্য সহায়তায় প্রস্তুত</span>
-            <span className="text-[#0E3A53] font-bold shrink-0 ml-1">পলাশ, নরসিংদী</span>
+            <span className="truncate">
+              {isBn ? '🏥 আনোয়ারা মেডিকেল কমপ্লেক্স ও যেকোনো প্রশ্নে সহায়তায় প্রস্তুত' : '🏥 Ready to help with your questions and Anowara Medical Complex information'}
+            </span>
+            <span className="text-[#0E3A53] font-bold shrink-0 ml-1">
+              {isBn ? 'পলাশ, নরসিংদী' : 'Palash, Narsingdi'}
+            </span>
           </div>
 
           {/* Messages Container */}
@@ -480,7 +351,9 @@ ${testsSummary}`;
                   <span className="w-2 h-2 rounded-full bg-[#2D8FC1] animate-bounce"></span>
                   <span className="w-2 h-2 rounded-full bg-[#2D8FC1] animate-bounce [animation-delay:0.2s]"></span>
                   <span className="w-2 h-2 rounded-full bg-[#2D8FC1] animate-bounce [animation-delay:0.4s]"></span>
-                  <span className="text-[11px] text-gray-500 font-medium ml-1">তথ্য যাচাই করে ভাবছি...</span>
+                  <span className="text-[11px] text-gray-500 font-medium ml-1">
+                    {isBn ? 'তথ্য যাচাই করে ভাবছি...' : 'Thinking...'}
+                  </span>
                 </div>
               </div>
             )}
@@ -535,7 +408,11 @@ ${testsSummary}`;
               </button>
             </form>
             <div className="text-[10px] text-gray-400 text-center mt-1.5">
-              <span>জরুরি সিরিয়াল বুকিং: 01944-874304 | অ্যাম্বুলেন্স: 01972-692504</span>
+              <span>
+                {isBn
+                  ? 'জরুরি সিরিয়াল বুকিং: 01944-874304 | অ্যাম্বুলেন্স: 01972-692504'
+                  : 'Appointments: 01944-874304 | Ambulance: 01972-692504'}
+              </span>
             </div>
           </div>
         </div>

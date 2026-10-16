@@ -6,6 +6,7 @@ import { NoticeMarquee } from './components/NoticeMarquee';
 import { Footer } from './components/Footer';
 import { FloatingEmergencyButton } from './components/FloatingEmergencyButton';
 import { HospitalAiChatbot } from './components/HospitalAiChatbot';
+import { WelcomeModal } from './components/WelcomeModal';
 
 // Dedicated Pages
 import { HomePage } from './pages/HomePage';
@@ -589,6 +590,8 @@ function MainApp() {
         )}
       </main>
 
+      {currentPage === 'home' && <WelcomeModal />}
+
       {/* 4. Global Footer with Language & Page Links */}
       {!isStandaloneLabWorkspace && !isStandaloneBillingWorkspace && <Footer onNavigate={navigateTo} />}
 
@@ -601,7 +604,7 @@ function MainApp() {
         currentPage !== 'billing-system' && (
         <>
           <FloatingEmergencyButton onNavigate={navigateTo} />
-          <HospitalAiChatbot onNavigate={navigateTo} />
+          <HospitalAiChatbot />
         </>
       )}
     </div>

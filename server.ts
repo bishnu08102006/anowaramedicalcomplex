@@ -2,7 +2,7 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { createServer as createViteServer } from 'vite';
+import { createServer as createViteServer, loadEnv } from 'vite';
 import { generateXmlSitemap, PAGES_SEO } from './src/data/seoData.ts';
 import { injectSeoIntoHtml } from './src/server/seoInjector.ts';
 
@@ -12,12 +12,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.use(express.json({ limit: '5mb' }));
 
-// Supported candidate models
-const CANDIDATE_MODELS = [
-  'gemini-3.6-flash',
-  'gemini-3.8-flash',
-  'gemini-flash-latest'
-];
+const CANDIDATE_MODELS = ['gemini-flash-latest'];
 
 // Default hospital system instruction
 const DEFAULT_SYSTEM_INSTRUCTION = `You are the thoughtful, intelligent official AI Health Assistant for Anowara Medical Complex (আনোয়ারা মেডিকেল কমপ্লেক্স), located in Palash, Narsingdi, Bangladesh.
@@ -27,7 +22,7 @@ Serial Booking: 01944-874304, 01972-692504
 Website: anowaramedicalcomplex.com
 Specialties: Medicine, Cardiology, Gynecology, Pediatrics, Orthopedics, Surgery.
 Services: 24/7 Emergency, Ambulance, Digital Pathology Lab, 4D USG, Digital X-Ray, ECG, OT, Pharmacy.
-Always answer politely and warmly in Bengali (or English if asked in English). Refuse off-topic tasks (programming, politics, homework).`;
+Answer questions on any topic politely and accurately. Understand Bengali, English, and mixed-language messages; reply in the user's language, or in both languages when requested. For medical questions, provide general information without claiming to diagnose or replace a clinician. For hospital-specific questions, use verified hospital information and never invent details.`;
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -66,16 +61,13 @@ Sitemap: https://anowaramedicalcomplex.com/sitemap.xml
 // Dedicated Chatbot API Route
 app.post('/api/chat', async (req, res) => {
   try {
-    const { message, history = [], systemInstruction, customKey } = req.body;
+    const { message, history = [], systemInstruction } = req.body;
 
     if (!message || typeof message !== 'string') {
       return res.status(400).json({ error: 'Message is required' });
     }
 
-    // Determine the API Key to use: custom key provided by user, or server environment key
-    const effectiveKey = (customKey && customKey !== 'YOUR_GEMINI_API_KEY') 
-      ? customKey 
-      : (process.env.GEMINI_API_KEY || '');
+    const effectiveKey = process.env.GEMINI_API_KEY || '';
 
     // Prepare contents payload
     const contentsPayload = [
@@ -97,7 +89,7 @@ app.post('/api/chat', async (req, res) => {
       contents: contentsPayload,
       generationConfig: {
         temperature: 0.35,
-        maxOutputTokens: 800,
+        maxOutputTokens: 2048,
       }
     };
 
@@ -127,23 +119,6 @@ app.post('/api/chat', async (req, res) => {
             lastError = errorJson?.error || { status: response.status, message: response.statusText };
             console.warn(`[Gemini Server API] Model ${model} returned:`, lastError);
 
-            // If permission denied on custom key, try falling back to server environment key if different
-            if (response.status === 403 && customKey && process.env.GEMINI_API_KEY && customKey !== process.env.GEMINI_API_KEY) {
-              const fallbackEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(process.env.GEMINI_API_KEY)}`;
-              const fbRes = await fetch(fallbackEndpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestBody)
-              });
-              if (fbRes.ok) {
-                const fbData = await fbRes.json();
-                const fbText = fbData?.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (fbText && fbText.trim()) {
-                  replyText = fbText.trim();
-                  break;
-                }
-              }
-            }
           }
         } catch (callErr: any) {
           lastError = callErr;
@@ -156,12 +131,12 @@ app.post('/api/chat', async (req, res) => {
       return res.json({ text: replyText, status: 'success' });
     }
 
-    // If Gemini was unavailable or returned permission denied / quota exceeded, return fallback status with explanation
-    return res.json({ 
-      text: null, 
-      status: 'fallback', 
-      notice: lastError?.message ? `Notice: ${lastError.message}` : 'Gemini AI is processing your request via local reasoning engine'
-    });
+    if (!effectiveKey) {
+      return res.status(503).json({ error: 'AI chat is not configured. Add a valid GEMINI_API_KEY on the server.' });
+    }
+
+    console.error('[Gemini Server API] No model returned an answer:', lastError?.message || lastError || 'Unknown error');
+    return res.status(502).json({ error: 'AI could not generate an answer. Please try again later.' });
   } catch (err: any) {
     console.error('[Gemini Server API] Unexpected handler error:', err);
     return res.status(500).json({ error: 'Server error processing chat request' });
@@ -170,6 +145,13 @@ app.post('/api/chat', async (req, res) => {
 
 async function main() {
   const isDev = process.env.NODE_ENV !== 'production';
+  const mode = isDev ? 'development' : 'production';
+  const env = loadEnv(mode, process.cwd(), '');
+  const configuredApiKey = [
+    process.env.GEMINI_API_KEY,
+    env.GEMINI_API_KEY,
+  ].find((value) => value && !/^(YOUR_|MY_)/.test(value.trim()));
+  if (configuredApiKey) process.env.GEMINI_API_KEY = configuredApiKey.trim();
 
   if (isDev) {
     const vite = await createViteServer({
