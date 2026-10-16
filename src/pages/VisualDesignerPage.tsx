@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { PageBanner } from '../components/PageBanner';
 import { VisitingCardDesigner } from '../components/VisitingCardDesigner';
+import { DoctorPadWorkspace } from '../components/DoctorPadWorkspace';
 import { useLanguage } from '../context/LanguageContext';
 import { useData } from '../context/DataContext';
 
@@ -352,6 +353,17 @@ export const VisualDesignerPage: React.FC<VisualDesignerPageProps> = ({
         </div>
 
         <VisitingCardDesigner />
+
+        <section className="mt-8 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
+          <div className="px-5 pt-5">
+            <h2 className="text-lg font-bold text-[#0E3A53]">
+              {isBn ? 'ডাক্তার প্যাড জেনারেটর' : 'Doctor Pad Generator'}
+            </h2>
+          </div>
+          <div className="p-3 sm:p-5">
+            <DoctorPadWorkspace />
+          </div>
+        </section>
 
         {/* Change Credentials Modal */}
         {isCredModalOpen && (
