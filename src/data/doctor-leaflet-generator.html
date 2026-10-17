@@ -55,7 +55,9 @@ try{
  }
 }catch(e){alert('আগের সেভ করা তথ্য পড়া যায়নি। নতুন করে শুরু করা হবে।')}
 if(!db.docs.length&&!db.seeded){db.seeded=1;db.docs.push({id:'d1',spec:'মেডিসিন, হৃদরোগ, বক্ষব্যাধি ডায়াবেটিস ও গ্যাস্ট্রোলিভার রোগে অভিজ্ঞ',name:'ডা. মাহমুদ রহমান',deg:'এমবিবিএস (ঢাকা মেডিকেল কলেজ)\nবিসিএস (স্বাস্থ্য) সিসিডি (বারডেম)\nএফসিপিএস (মেডিসিন - এফপি)',day:'প্রতি শুক্রবার',time:'সকাল ৯টা - বিকাল ৫টা',phone:'01972-692504\n01712-692504',exp:'শেখ রাসেল জাতীয় গ্যাস্ট্রোলিভার ইনস্টিটিউট ও হাসপাতাল, মহাখালী, ঢাকা\nএক্স সিনিয়র মেডিকেল অফিসার, ন্যাশনাল হার্ট ফাউন্ডেশন হাসপাতাল',photo:'',ps:100,px:0,py:0})}
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){alert('সেভ করা যায়নি, ছবি একটু বড় হতে পারে')}};
+let cloudReady=false,saveTimer;
+const save=()=>{if(!cloudReady)return;clearTimeout(saveTimer);saveTimer=setTimeout(()=>parent.postMessage({channel:'amc-visual-designer',type:'save',data:db},location.origin),300)};
+addEventListener('message',e=>{if(e.source!==parent||e.origin!==location.origin||e.data?.channel!=='amc-visual-designer'||e.data?.type!=='load')return;if(e.data.data)db=e.data.data;cloudReady=true;home();if(!e.data.data)save()});
 db.docs.forEach(d=>{if(d.photo&&!d.photoOrig){d.photoOrig=d.photo;d.photo=''}});
 let cur=null;const imgs={};
 function loadImg(src){return new Promise(r=>{if(!src)return r(null);if(imgs[src])return r(imgs[src]);const i=new Image();i.onload=()=>{imgs[src]=i;r(i)};i.onerror=()=>r(null);i.src=src})}
@@ -203,5 +205,4 @@ async function dl(){
  try{if(window.claude&&claude.use){const D=await claude.use('downloads');if(D){await D.save({filename:name,data:blob});return}}}catch(e){if(e&&e.code==='declined')return}
  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();
 }
-home();
 </script></body></html>

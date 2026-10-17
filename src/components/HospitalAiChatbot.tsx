@@ -12,8 +12,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useData } from '../context/DataContext';
-import { Doctor } from '../data/doctors';
-import { DiagnosticTest } from '../data/tests';
+import { answerHospitalQuestion } from '../utils/localHospitalAssistant';
 
 interface ChatMessage {
   id: string;
@@ -22,9 +21,13 @@ interface ChatMessage {
   timestamp: string;
 }
 
-export const HospitalAiChatbot: React.FC = () => {
+interface HospitalAiChatbotProps {
+  isMinimized?: boolean;
+}
+
+export const HospitalAiChatbot: React.FC<HospitalAiChatbotProps> = ({ isMinimized = false }) => {
   const { isBn } = useLanguage();
-  const { doctors, diagnosticTests } = useData();
+  const { doctors, diagnosticTests, notices, blogs, managementMembers, emergencyNotice } = useData();
 
   const [isOpen, setIsOpen] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
@@ -32,6 +35,10 @@ export const HospitalAiChatbot: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isMinimized) setIsOpen(false);
+  }, [isMinimized]);
 
   // Initialize welcoming message
   useEffect(() => {
@@ -41,8 +48,8 @@ export const HospitalAiChatbot: React.FC = () => {
           id: 'welcome-msg',
           role: 'model',
           text: isBn
-            ? "আসসালামু আলাইকুম! আমি **আনোয়ারা মেডিকেল কমপ্লেক্স**-এর এআই সহকারী। 🏥✨\n\nহাসপাতাল, স্বাস্থ্য বা অন্য যেকোনো বিষয়ে বাংলায় বা ইংরেজিতে প্রশ্ন করুন—আমি সাহায্য করার চেষ্টা করব।\n\nডাক্তারদের সময়সূচি, টেস্টের ফি, জরুরি সেবা বা হাসপাতালের ঠিকানা সম্পর্কেও জানতে পারেন।"
-            : "Hello and welcome to **Anowara Medical Complex**! 🏥✨\n\nAsk me anything in English or Bengali. I can help with general questions as well as doctors, test prices, emergency services, and hospital information.",
+            ? "আসসালামু আলাইকুম! আমি **আনোয়ারা মেডিকেল কমপ্লেক্স**-এর সহকারী। 🏥✨\n\nডাক্তার ও চেম্বারের সময়, টেস্টের ফি, সিরিয়াল বুকিং, জরুরি যোগাযোগ, সেবা, নোটিশ ও স্বাস্থ্যবিষয়ক লেখা সম্পর্কে বাংলায় বা English-এ প্রশ্ন করুন।"
+            : "Welcome to **Anowara Medical Complex**! 🏥✨\n\nAsk in English or Bengali about doctors and schedules, test prices, appointments, emergency contacts, services, notices, or health articles.",
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);
@@ -57,58 +64,7 @@ export const HospitalAiChatbot: React.FC = () => {
     }
   }, [messages, isOpen]);
 
-  // Ground hospital-specific answers in the live site data while allowing general questions.
-  const buildSystemInstruction = (doctorList: Doctor[], testList: DiagnosticTest[]): string => {
-    const doctorsSummary = (doctorList || []).map(d => 
-      `- ${d.name} (${d.nameEn || ''}): ${d.specialty} | ডিগ্রি: ${d.degree || ''} | চেম্বার সময়: ${d.time || 'নির্ধারিত সময়ে'} | দিন: ${d.days ? d.days.join(', ') : 'নির্ধারিত দিনে'} | রুম: ${d.room || 'চেম্বার'} | সিরিয়াল নম্বর: ${d.phone || '01972-692504 / 01944-874304'}`
-    ).join('\n');
-
-    const testsSummary = (testList || []).slice(0, 60).map(t => 
-      `- ${t.name} (${t.banglaName || ''}): ফি ${t.price} (${t.priceEn || ''}) | ক্যাটাগরি: ${t.category === 'pathology' ? 'প্যাথলজি ল্যাব' : 'রেডিওলজি/ইমেজিং'} | ডেলিভারি সময়: ${t.deliveryTime}${t.fastingRequired ? ' (খালি পেটে পরীক্ষা করা আবশ্যক)' : ' (স্বাভাবিক খাওয়ার পর করা যায়)'}`
-    ).join('\n');
-
-    return `You are the thoughtful, highly empathetic, and intelligent official AI Health Assistant for Anowara Medical Complex (আনোয়ারা মেডিকেল কমপ্লেক্স), located in Palash, Narsingdi, Bangladesh.
-
-GENERAL ASSISTANT RULES:
-1. Answer questions on any topic; do not refuse solely because a question is unrelated to the hospital. Be useful, accurate, respectful, and clear.
-2. Understand Bengali and English, including mixed-language messages. Reply in the language the user used; if the user requests both languages, provide the answer in both.
-3. For greetings and thanks, respond warmly and naturally.
-4. For medical questions, give general educational information, do not claim to diagnose or replace a clinician, and advise urgent in-person care for emergency symptoms. Do not invent medical facts.
-5. Use the hospital information below for hospital-specific questions. Do not invent doctors, schedules, test prices, or hospital policies; say when information is unavailable and provide the relevant contact number.
-6. Explain how patients can use our website:
-   - How to book a serial online (go to the "সিরিয়াল বুকিং" / Appointment page and fill the form).
-   - How to download doctor schedule lists or notices in PDF.
-   - How to verify hospital staff ID card via QR code.
-   - Where to find health blogs and announcements.
-
-HOSPITAL PROFILE & CONTACTS:
-- Hospital Name: আনোয়ারা মেডিকেল কমপ্লেক্স (Anowara Medical Complex)
-- Location & Address: ওয়াপদা সদর রোড, মেডিকেল মোড়, পলাশ, নরসিংদী (WAPDA Sadar Road, Medical Mor, Palash, Narsingdi)
-- Emergency / Reception Hotline (24/7): 01972-692504, 01944-874304
-- Hospital Authority Hotline: 01712-692504
-- Serial Booking Hotline: 01944-874304, 01972-692504
-- Website: anowaramedicalcomplex.com
-- Key Facilities:
-  * ২৪ ঘণ্টা জরুরি বিভাগ (24/7 Emergency Care with on-duty MBBS medical officers)
-  * ইনডোর ও আউটডোর সেবা (Inpatient Admission & OPD)
-  * ২৪ ঘণ্টা নিজস্ব আধুনিক অ্যাম্বুলেন্স সেবা
-  * আধুনিক ডিজিটাল প্যাথলজি ও বায়োকেমিস্ট্রি ল্যাব
-  * ৪ডি কালার ডপলার আল্ট্রাসনোগ্রাম (4D USG)
-  * ৫০০ এমএ ডিজিটাল এক্স-রে (High-Resolution Digital X-Ray)
-  * ১২ চ্যানেল ডিজিটাল ইসিজি (12-Channel ECG)
-  * অত্যাধুনিক মেজর ও মাইনর অপারেশন থিয়েটার (OT)
-  * সার্বক্ষণিক ইন-হাউজ ফার্মেসি
-  * অভিজ্ঞ বিশেষজ্ঞ কনসালট্যান্ট চেম্বার
-
-DOCTORS & VISITING SCHEDULE (use only when known to answer hospital questions):
-${doctorsSummary}
-
-DIAGNOSTIC TEST CHARGES & PREPARATION (use only when known to answer hospital questions):
-${testsSummary}`;
-  };
-
-  // Send chat messages through the server-side AI endpoint
-  const handleSendMessage = async (textToSend?: string) => {
+  const handleSendMessage = (textToSend?: string) => {
     const query = (textToSend || inputMessage).trim();
     if (!query || isLoading) return;
 
@@ -119,51 +75,18 @@ ${testsSummary}`;
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    const newHistory = [...messages, userMessage];
-    setMessages(newHistory);
+    setMessages((previous) => [...previous, userMessage]);
     setInputMessage('');
     setIsLoading(true);
 
-    // Prepare system instruction
-    const systemInstructionText = buildSystemInstruction(doctors, diagnosticTests);
-
-    // Prepare conversation contents for Gemini API (user & model turns)
-    const contentsPayload = newHistory
-      .filter(m => m.id !== 'welcome-msg')
-      .slice(-10)
-      .map(m => ({
-        role: m.role === 'user' ? 'user' : 'model',
-        text: m.text
-      }));
-
-    let generatedText: string;
-    try {
-      const serverResponse = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: query,
-          history: contentsPayload,
-          systemInstruction: systemInstructionText
-        })
-      });
-
-      const data = await serverResponse.json();
-      if (!serverResponse.ok || typeof data?.text !== 'string' || !data.text.trim()) {
-        throw new Error(data?.error || 'AI service did not return an answer');
-      }
-      generatedText = data.text.trim();
-    } catch (error) {
-      console.error('[Chatbot] Unable to get an AI response:', error);
-      const isNotConfigured = error instanceof Error && error.message.includes('not configured');
-      generatedText = isNotConfigured
-        ? isBn
-          ? 'এআই চ্যাট চালু করতে সার্ভারে একটি বৈধ Gemini API key সেট করতে হবে। সেটআপের জন্য ওয়েবসাইট কর্তৃপক্ষের সঙ্গে যোগাযোগ করুন।'
-          : 'AI chat needs a valid Gemini API key on the server. Please contact the website administrator to enable it.'
-        : isBn
-          ? 'দুঃখিত, এই মুহূর্তে এআই সেবার সঙ্গে সংযোগ করা যাচ্ছে না। অনুগ্রহ করে পরে আবার চেষ্টা করুন।'
-          : 'Sorry, the AI service is unavailable right now. Please try again later.';
-    }
+    const generatedText = answerHospitalQuestion(query, {
+      doctors,
+      diagnosticTests,
+      notices,
+      blogs,
+      managementMembers,
+      emergencyNotice,
+    }, isBn);
 
     const modelMessage: ChatMessage = {
       id: `model-${Date.now()}`,
@@ -172,7 +95,7 @@ ${testsSummary}`;
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    setMessages(prev => [...prev, modelMessage]);
+    setMessages((previous) => [...previous, modelMessage]);
     setIsLoading(false);
   };
 
@@ -182,8 +105,8 @@ ${testsSummary}`;
         id: `welcome-${Date.now()}`,
         role: 'model',
         text: isBn
-          ? "চ্যাট রিসেট করা হয়েছে। বাংলা বা ইংরেজিতে যেকোনো প্রশ্ন করুন—আমি সাহায্য করব।"
-          : "Chat has been reset. Ask me anything in English or Bengali.",
+          ? "চ্যাট রিসেট করা হয়েছে। ডাক্তার, টেস্ট, সিরিয়াল, যোগাযোগ বা হাসপাতালের সেবা সম্পর্কে জিজ্ঞেস করুন।"
+          : "Chat reset. Ask about doctors, tests, appointments, contacts, or hospital services.",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }
     ]);
@@ -197,6 +120,8 @@ ${testsSummary}`;
     { label: isBn ? "📍 হাসপাতালের অবস্থান" : "📍 Location", query: isBn ? "হাসপাতালের ঠিকানা ও অবস্থান কোথায়?" : "Where is the hospital located?" },
     { label: isBn ? "📅 সিরিয়াল বুকিং নিয়ম" : "📅 Serial Booking", query: isBn ? "অনলাইনে কীভাবে ডাক্তারের সিরিয়াল বুকিং করব?" : "How do I book a doctor appointment online?" },
   ];
+
+  if (isMinimized) return null;
 
   return (
     <>
@@ -260,12 +185,12 @@ ${testsSummary}`;
                 <h3 className="font-bold text-sm sm:text-base leading-tight flex items-center gap-1.5">
                   <span>{isBn ? "আনোয়ারা এআই সহকারী" : "Anowara AI Assistant"}</span>
                   <span className="px-1.5 py-0.2 rounded-md bg-amber-400/20 text-amber-300 border border-amber-300/30 text-[9px] font-bold">
-                    {isBn ? 'সক্রিয় এআই' : 'Active AI'}
+                    {isBn ? 'স্থানীয় সহায়ক' : 'Local Guide'}
                   </span>
                 </h3>
                 <p className="text-[11px] text-cyan-100/80 flex items-center gap-1 mt-0.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                  <span>{isBn ? "অনলাইন • বুদ্ধিমান স্বাস্থ্য সহকারী" : "Online • Thoughtful Health Support"}</span>
+                  <span>{isBn ? "সাইটের তথ্য সহায়তা • বাংলা / English" : "Website information • বাংলা / English"}</span>
                 </p>
               </div>
             </div>
@@ -291,7 +216,7 @@ ${testsSummary}`;
           {/* Quick Notice Tag */}
           <div className="bg-amber-50/90 border-b border-amber-200/60 px-3 py-1.5 text-[10.5px] text-amber-900 flex items-center justify-between shrink-0 font-medium">
             <span className="truncate">
-              {isBn ? '🏥 আনোয়ারা মেডিকেল কমপ্লেক্স ও যেকোনো প্রশ্নে সহায়তায় প্রস্তুত' : '🏥 Ready to help with your questions and Anowara Medical Complex information'}
+              {isBn ? '🏥 হাসপাতাল ও ওয়েবসাইটের তথ্য জানতে লিখুন' : '🏥 Ask about hospital and website information'}
             </span>
             <span className="text-[#0E3A53] font-bold shrink-0 ml-1">
               {isBn ? 'পলাশ, নরসিংদী' : 'Palash, Narsingdi'}
@@ -390,7 +315,7 @@ ${testsSummary}`;
                 type="text"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                placeholder={isBn ? "লক্ষণ, ডাক্তার, টেস্ট বা সেবা সম্পর্কে লিখুন..." : "Ask about symptoms, doctors, tests..."}
+                placeholder={isBn ? "ডাক্তার, টেস্ট, সিরিয়াল বা সেবা সম্পর্কে লিখুন..." : "Ask about doctors, tests, appointments..."}
                 disabled={isLoading}
                 className="flex-1 bg-gray-50 border border-gray-200 rounded-2xl px-3.5 py-2.5 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#2D8FC1] focus:bg-white focus:ring-1 focus:ring-[#2D8FC1] transition"
               />

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Stethoscope, Calendar, Clock, MapPin, Search, Phone, UserCheck, ChevronRight } from 'lucide-react';
+import { Calendar, Clock, MapPin, Search, Phone, UserCheck, ChevronRight } from 'lucide-react';
 import { PageBanner } from '../components/PageBanner';
+import { DoctorPortrait } from '../components/DoctorPortrait';
 import { dayOrder, dayNamesMap, dayNamesMapEn, DayKey } from '../data/doctors';
 import { useLanguage } from '../context/LanguageContext';
 import { useData } from '../context/DataContext';
@@ -163,46 +164,50 @@ export const DoctorsPage: React.FC<DoctorsPageProps> = ({
                 <div
                   key={doc.id}
                   id={doc.id}
-                  className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-all border border-gray-200/80 flex flex-col justify-between group"
+                  className="overflow-hidden rounded-[1.4rem] bg-white shadow-[0_3px_16px_rgba(14,58,83,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_35px_rgba(14,58,83,0.13)] border border-[#DDE6E9] flex flex-col justify-between group"
                 >
+                  <DoctorPortrait photo={doc.photo} name={docName} isBn={isBn} />
                   <div>
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div className="w-12 h-12 rounded-xl bg-[#E7F2F8] text-[#2D8FC1] flex items-center justify-center font-bold text-lg shrink-0 group-hover:bg-[#0E3A53] group-hover:text-white transition-colors">
-                        <Stethoscope className="w-6 h-6" />
+                    <div className="p-5 sm:p-6">
+                      <div className="mb-4 flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[#C9973B]">
+                            {isBn ? 'বিশেষজ্ঞ চিকিৎসক' : 'Consultant'}
+                          </p>
+                          <h3 className="font-display text-lg font-extrabold leading-snug text-[#0E3A53] group-hover:text-[#2D8FC1] transition-colors">
+                            {docName}
+                          </h3>
+                        </div>
+                        <span className="inline-block shrink-0 rounded-full border border-[#DDE6E9] bg-[#F8FAFB] px-2.5 py-1 text-[10px] font-semibold text-[#0E3A53]">
+                          {docRoom || (isBn ? 'চেম্বার' : 'Chamber')}
+                        </span>
                       </div>
-                      <span className="inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#F8FAFB] border border-gray-200 text-[#0E3A53]">
-                        {docRoom}
-                      </span>
-                    </div>
 
-                    <h3 className="font-display font-bold text-lg text-[#0E3A53] group-hover:text-[#2D8FC1] transition-colors">
-                      {docName}
-                    </h3>
-                    <p className="text-xs font-semibold text-[#2D8FC1] mb-1.5">{docSpec}</p>
-                    <p className="text-xs text-gray-600 leading-relaxed mb-4">{docDeg}</p>
+                      <p className="mb-2 text-xs font-semibold leading-relaxed text-[#2D8FC1]">{docSpec}</p>
+                      <p className="mb-5 min-h-10 text-xs leading-relaxed text-gray-600">{docDeg}</p>
 
-                    {/* Visiting Timing */}
-                    <div className="bg-gray-50 rounded-xl p-3 mb-4 space-y-1.5 text-xs text-gray-700">
-                      <div className="flex items-center gap-2 font-medium text-[#0E3A53]">
-                        <Clock className="w-3.5 h-3.5 text-[#C9973B] shrink-0" />
-                        <span>{docTime}</span>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-1 text-[11px] text-gray-500 pt-1">
-                        <span className="font-semibold text-gray-700">{isBn ? 'দিন:' : 'Days:'}</span>
-                        {doc.days.map((d) => (
-                          <span
-                            key={d}
-                            className="bg-white px-1.5 py-0.5 rounded border border-gray-200 text-[#0E3A53] font-medium"
-                          >
-                            {isBn ? dayNamesMap[d as DayKey] || d : dayNamesMapEn[d as DayKey] || d}
-                          </span>
-                        ))}
+                      <div className="mb-1 space-y-2 rounded-xl border border-[#E7EEF1] bg-[#F7FAFB] p-3.5 text-xs text-gray-700">
+                        <div className="flex items-center gap-2 font-medium text-[#0E3A53]">
+                          <Clock className="h-3.5 w-3.5 shrink-0 text-[#C9973B]" />
+                          <span>{docTime}</span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1 text-[11px] text-gray-500">
+                          <span className="font-semibold text-gray-700">{isBn ? 'দিন:' : 'Days:'}</span>
+                          {doc.days.map((d) => (
+                            <span
+                              key={d}
+                              className="rounded border border-gray-200 bg-white px-1.5 py-0.5 font-medium text-[#0E3A53]"
+                            >
+                              {isBn ? dayNamesMap[d as DayKey] || d : dayNamesMapEn[d as DayKey] || d}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+                  <div className="flex items-center gap-2 border-t border-[#EDF1F3] bg-[#FCFDFD] px-5 py-4 sm:px-6">
                     <button
                       onClick={() => onSelectDoctorForAppointment(`${docName} (${docSpec})`)}
                       className="flex-1 bg-[#0E3A53] hover:bg-[#0A2A3D] text-white py-2.5 px-3 rounded-xl font-semibold text-xs transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"

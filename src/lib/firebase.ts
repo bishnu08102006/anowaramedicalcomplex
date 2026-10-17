@@ -1101,3 +1101,97 @@ export const savePortalUserToFirestore = async (user: PortalUserCredential): Pro
     throw error;
   }
 };
+
+export type VisualDesignerWorkspace = 'doctor-pad' | 'doctor-leaflet' | 'visiting-card';
+
+const VISUAL_DESIGNER_DATA_COLLECTION = 'visual_designer_data';
+const VISUAL_DESIGNER_CHUNK_SIZE = 700 * 1024;
+
+const splitUtf8 = (value: string): string[] => {
+  const bytes = new TextEncoder().encode(value);
+  const chunks: string[] = [];
+
+  for (let offset = 0; offset < bytes.length;) {
+    let end = Math.min(offset + VISUAL_DESIGNER_CHUNK_SIZE, bytes.length);
+    if (end < bytes.length) {
+      while (end > offset && (bytes[end] & 0xc0) === 0x80) end--;
+    }
+    chunks.push(new TextDecoder().decode(bytes.subarray(offset, end)));
+    offset = end;
+  }
+
+  return chunks;
+};
+
+export const getVisualDesignerData = async <T,>(workspace: VisualDesignerWorkspace): Promise<T | null> => {
+  try {
+    const manifestRef = doc(db, VISUAL_DESIGNER_DATA_COLLECTION, `${workspace}__manifest`);
+    const manifestSnap = await getDoc(manifestRef);
+    if (!manifestSnap.exists()) return null;
+
+    const { chunkCount, chunkPrefix } = manifestSnap.data();
+    if (!Number.isInteger(chunkCount) || chunkCount < 1 || typeof chunkPrefix !== 'string') {
+      throw new Error(`Invalid saved data manifest for ${workspace}`);
+    }
+
+    const chunkSnaps = await Promise.all(
+      Array.from({ length: chunkCount }, (_, index) =>
+        getDoc(doc(db, VISUAL_DESIGNER_DATA_COLLECTION, `${chunkPrefix}${index}`))
+      )
+    );
+    if (chunkSnaps.some((chunk) => !chunk.exists())) {
+      throw new Error(`Saved data is incomplete for ${workspace}`);
+    }
+
+    const serialized = chunkSnaps.map((chunk) => {
+      const value = chunk.data().value;
+      if (typeof value !== 'string') throw new Error(`Invalid saved data chunk for ${workspace}`);
+      return value;
+    }).join('');
+    return JSON.parse(serialized) as T;
+  } catch (error) {
+    console.error(`Error loading ${workspace} data from Firestore:`, error);
+    throw error;
+  }
+};
+
+export const saveVisualDesignerData = async (
+  workspace: VisualDesignerWorkspace,
+  data: unknown
+): Promise<void> => {
+  try {
+    const serialized = JSON.stringify(data);
+    if (serialized === undefined) {
+      throw new Error(`Cannot save empty data for ${workspace}`);
+    }
+
+    const chunks = splitUtf8(serialized);
+    const manifestRef = doc(db, VISUAL_DESIGNER_DATA_COLLECTION, `${workspace}__manifest`);
+    const previousManifest = await getDoc(manifestRef);
+    const previousData = previousManifest.exists() ? previousManifest.data() : null;
+    const previousChunkCount = Number(previousData?.chunkCount) || 0;
+    const previousChunkPrefix = typeof previousData?.chunkPrefix === 'string'
+      ? previousData.chunkPrefix
+      : null;
+    const chunkPrefix = `${workspace}__${Date.now()}_${Math.random().toString(36).slice(2)}__chunk__`;
+
+    await Promise.all(chunks.map((value, index) =>
+      setDoc(doc(db, VISUAL_DESIGNER_DATA_COLLECTION, `${chunkPrefix}${index}`), { value })
+    ));
+    await setDoc(manifestRef, { chunkCount: chunks.length, chunkPrefix, updatedAt: Date.now() });
+
+    if (previousChunkPrefix) {
+      const cleanupResults = await Promise.allSettled(Array.from({ length: previousChunkCount }, (_, index) =>
+        deleteDoc(doc(db, VISUAL_DESIGNER_DATA_COLLECTION, `${previousChunkPrefix}${index}`))
+      ));
+      cleanupResults.forEach((result) => {
+        if (result.status === 'rejected') {
+          console.warn(`Could not remove an old ${workspace} data chunk:`, result.reason);
+        }
+      });
+    }
+  } catch (error) {
+    console.error(`Error saving ${workspace} data to Firestore:`, error);
+    throw error;
+  }
+};

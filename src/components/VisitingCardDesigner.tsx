@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Check, Copy, Download, RotateCcw } from 'lucide-react';
+import { getVisualDesignerData, saveVisualDesignerData } from '../lib/firebase';
 
 const FRONT_TEMPLATE_URL = 'https://i.postimg.cc/XvPWbjxq/4.png';
 const BACK_TEMPLATE_URL = 'https://i.postimg.cc/L886F6Lc/DBEFFA.png';
@@ -17,8 +18,22 @@ const DEFAULTS = {
 type CardInfo = typeof DEFAULTS;
 type ImageStatus = 'loading' | 'ready' | 'error';
 
+const isCardInfo = (value: unknown): value is CardInfo => {
+  if (!value || typeof value !== 'object') return false;
+  const data = value as Record<keyof CardInfo, unknown>;
+  return typeof data.name === 'string'
+    && typeof data.designation === 'string'
+    && typeof data.mobile === 'string'
+    && typeof data.email === 'string'
+    && typeof data.nameSize === 'number'
+    && typeof data.designationSize === 'number'
+    && typeof data.emailSize === 'number';
+};
+
 export const VisitingCardDesigner: React.FC = () => {
   const [cardInfo, setCardInfo] = useState<CardInfo>({ ...DEFAULTS });
+  const [isCloudLoaded, setIsCloudLoaded] = useState(false);
+  const [cloudState, setCloudState] = useState<'loading' | 'saving' | 'saved' | 'error'>('loading');
   const [frontStatus, setFrontStatus] = useState<ImageStatus>('loading');
   const [backStatus, setBackStatus] = useState<ImageStatus>('loading');
   const [activeSide, setActiveSide] = useState<'front' | 'back'>('front');
@@ -26,6 +41,48 @@ export const VisitingCardDesigner: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frontImageRef = useRef<HTMLImageElement | null>(null);
   const backImageRef = useRef<HTMLImageElement | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    getVisualDesignerData<unknown>('visiting-card')
+      .then((saved) => {
+        if (!isMounted) return;
+        if (saved !== null && !isCardInfo(saved)) {
+          throw new Error('Invalid saved visiting card data');
+        }
+        if (saved) setCardInfo(saved);
+        setIsCloudLoaded(true);
+        setCloudState('saved');
+      })
+      .catch((error) => {
+        console.error('Could not load visiting card data from Firestore:', error);
+        if (isMounted) setCloudState('error');
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isCloudLoaded) return;
+    let isMounted = true;
+    setCloudState('saving');
+    const timer = window.setTimeout(() => {
+      saveVisualDesignerData('visiting-card', cardInfo)
+        .then(() => {
+          if (isMounted) setCloudState('saved');
+        })
+        .catch((error) => {
+          console.error('Could not save visiting card data to Firestore:', error);
+          if (isMounted) setCloudState('error');
+        });
+    }, 500);
+    return () => {
+      isMounted = false;
+      window.clearTimeout(timer);
+    };
+  }, [cardInfo, isCloudLoaded]);
 
   useEffect(() => {
     let isMounted = true;
@@ -172,6 +229,9 @@ export const VisitingCardDesigner: React.FC = () => {
           <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 ${frontStatus === 'ready' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : frontStatus === 'error' ? 'border-red-200 bg-red-50 text-red-700' : 'border-gray-200 bg-gray-50 text-gray-600'}`}>
             <span className={`h-2 w-2 rounded-full ${frontStatus === 'ready' ? 'bg-emerald-500' : frontStatus === 'error' ? 'bg-red-500' : 'animate-pulse bg-amber-500'}`} />
             {frontStatus === 'ready' ? 'টেমপ্লেট প্রস্তুত' : frontStatus === 'error' ? 'টেমপ্লেট লোড হয়নি' : 'টেমপ্লেট লোড হচ্ছে'}
+          </span>
+          <span role="status" className={`text-[11px] font-semibold ${cloudState === 'error' ? 'text-red-700' : cloudState === 'saved' ? 'text-emerald-700' : 'text-amber-700'}`}>
+            {cloudState === 'error' ? 'সার্ভারে সেভ/লোড হয়নি' : cloudState === 'saved' ? 'সার্ভারে সেভ হয়েছে' : cloudState === 'saving' ? 'সার্ভারে সেভ হচ্ছে' : 'সার্ভার থেকে লোড হচ্ছে'}
           </span>
           <button type="button" onClick={resetCard} title="তথ্য রিসেট" className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 text-gray-600 transition hover:bg-gray-50 hover:text-gray-900">
             <RotateCcw className="h-4 w-4" />

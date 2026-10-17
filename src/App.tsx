@@ -7,6 +7,7 @@ import { Footer } from './components/Footer';
 import { FloatingEmergencyButton } from './components/FloatingEmergencyButton';
 import { HospitalAiChatbot } from './components/HospitalAiChatbot';
 import { WelcomeModal } from './components/WelcomeModal';
+import { PublicPageMotion } from './components/PublicPageMotion';
 
 // Dedicated Pages
 import { HomePage } from './pages/HomePage';
@@ -362,6 +363,7 @@ function MainApp() {
     return parseLocationToPage();
   });
   const [selectedDoctorForBooking, setSelectedDoctorForBooking] = useState<string>('');
+  const [floatingActionsMinimized, setFloatingActionsMinimized] = useState(false);
 
   // Synchronize document SEO tags on navigation & language changes
   useEffect(() => {
@@ -454,6 +456,7 @@ function MainApp() {
 
       {/* 3. Dedicated Page Routing */}
       <main className={isStandaloneBillingWorkspace ? 'h-screen w-full' : 'flex-1'}>
+        <PublicPageMotion page={currentPage} />
         {isStandaloneBillingWorkspace && <BillingSystemWorkspace />}
         {currentPage === 'home' && (
           <HomePage
@@ -603,8 +606,12 @@ function MainApp() {
         currentPage !== 'receipt-generator' &&
         currentPage !== 'billing-system' && (
         <>
-          <FloatingEmergencyButton onNavigate={navigateTo} />
-          <HospitalAiChatbot />
+          <FloatingEmergencyButton
+            onNavigate={navigateTo}
+            isMinimized={floatingActionsMinimized}
+            onToggleMinimized={() => setFloatingActionsMinimized((minimized) => !minimized)}
+          />
+          <HospitalAiChatbot isMinimized={floatingActionsMinimized} />
         </>
       )}
     </div>

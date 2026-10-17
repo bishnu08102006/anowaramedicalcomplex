@@ -327,7 +327,7 @@ export const VisualDesignerPage: React.FC<VisualDesignerPageProps> = ({
           <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-200/80">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-gray-500 font-medium">
-                {isBn ? "ডাটাবেজ স্ট্যাটাস" : "Database Sync"}
+                {isBn ? "ক্লাউড ডেটাবেজ" : "Cloud Database"}
               </span>
               <Database className="w-4 h-4 text-emerald-600" />
             </div>
@@ -335,7 +335,7 @@ export const VisualDesignerPage: React.FC<VisualDesignerPageProps> = ({
               {isFirebaseConnected ? 'Active' : 'Offline Mode'}
             </div>
             <p className="text-[11px] text-gray-500 mt-1">
-              {isBn ? "ফায়ারবেস portal_users কালেকশন" : "Firebase portal_users collection"}
+              {isBn ? "ডিজাইনের তথ্য ফায়ারবেসে সংরক্ষিত হয়" : "Designer data is saved to Firebase"}
             </p>
           </div>
 
