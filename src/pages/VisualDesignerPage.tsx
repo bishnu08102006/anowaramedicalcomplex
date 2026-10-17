@@ -26,6 +26,7 @@ import {
 import { PageBanner } from '../components/PageBanner';
 import { VisitingCardDesigner } from '../components/VisitingCardDesigner';
 import { DoctorPadWorkspace } from '../components/DoctorPadWorkspace';
+import { DoctorLeafletWorkspace } from '../components/DoctorLeafletWorkspace';
 import { useLanguage } from '../context/LanguageContext';
 import { useData } from '../context/DataContext';
 
@@ -362,6 +363,17 @@ export const VisualDesignerPage: React.FC<VisualDesignerPageProps> = ({
           </div>
           <div className="p-3 sm:p-5">
             <DoctorPadWorkspace />
+          </div>
+        </section>
+
+        <section className="mt-8 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
+          <div className="px-5 pt-5">
+            <h2 className="text-lg font-bold text-[#0E3A53]">
+              {isBn ? 'ডাক্তারের লিফলেট জেনারেটর' : 'Doctor Leaflet Generator'}
+            </h2>
+          </div>
+          <div className="p-3 sm:p-5">
+            <DoctorLeafletWorkspace />
           </div>
         </section>
 

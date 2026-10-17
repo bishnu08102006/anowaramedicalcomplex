@@ -417,11 +417,14 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
   });
 
   const handleDoctorPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.currentTarget;
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setDoctorFormError('');
     if (file.size > 5 * 1024 * 1024) {
       setDoctorFormError(isBn ? 'ছবির সাইজ সর্বোচ্চ ৫ মেগাবাইট হতে পারবে' : 'Image size must be under 5MB');
+      input.value = '';
       return;
     }
 
@@ -448,15 +451,24 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, width, height);
-          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
-          setNewDoc(prev => ({ ...prev, photo: compressedDataUrl }));
+        if (!ctx) {
+          setDoctorFormError(isBn ? 'ছবিটি প্রক্রিয়া করা যায়নি। আবার চেষ্টা করুন।' : 'Could not process the image. Please try again.');
+          return;
         }
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        setNewDoc(prev => ({ ...prev, photo: compressedDataUrl }));
+      };
+      img.onerror = () => {
+        setDoctorFormError(isBn ? 'ছবিটি খোলা যায়নি। অন্য একটি ছবি নির্বাচন করুন।' : 'Could not open the image. Please choose another file.');
       };
       img.src = event.target?.result as string;
     };
+    reader.onerror = () => {
+      setDoctorFormError(isBn ? 'ছবিটি পড়া যায়নি। আবার চেষ্টা করুন।' : 'Could not read the image. Please try again.');
+    };
     reader.readAsDataURL(file);
+    input.value = '';
   };
 
   const handleOpenAddDoctorModal = () => {
@@ -699,7 +711,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
       days: newDoc.days.length ? newDoc.days : ['রবি', 'সোম', 'মঙ্গল'],
       room: newDoc.room.trim(),
       roomEn: newDoc.roomEn.trim(),
-      ...(newDoc.photo ? { photo: newDoc.photo } : {})
+      photo: newDoc.photo,
     };
 
     if (editingDoctorId) {
@@ -2418,6 +2430,49 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                     placeholder="Dr. Md. Kamrul Islam"
                     className="w-full bg-gray-50 border border-gray-200 px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2D8FC1]"
                   />
+                </div>
+              </div>
+
+              <div>
+                <p className="block font-semibold text-gray-700 mb-1">
+                  {isBn ? "ডাক্তারের ছবি" : "Doctor Photo"}
+                </p>
+                <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3">
+                  <div className="w-16 h-16 shrink-0 overflow-hidden rounded-xl bg-[#E7F2F8] text-[#2D8FC1] flex items-center justify-center">
+                    {newDoc.photo ? (
+                      <img src={newDoc.photo} alt={isBn ? "ডাক্তারের ছবির প্রিভিউ" : "Doctor photo preview"} className="w-full h-full object-cover" />
+                    ) : (
+                      <Camera className="w-6 h-6" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-gray-200 px-3 py-2 text-xs font-semibold text-[#0E3A53] hover:bg-gray-100 cursor-pointer">
+                        <Upload className="w-3.5 h-3.5" />
+                        {newDoc.photo
+                          ? (isBn ? "ছবি পরিবর্তন করুন" : "Change Photo")
+                          : (isBn ? "ছবি আপলোড করুন" : "Upload Photo")}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleDoctorPhotoUpload}
+                          className="sr-only"
+                        />
+                      </label>
+                      {newDoc.photo && (
+                        <button
+                          type="button"
+                          onClick={() => setNewDoc(prev => ({ ...prev, photo: '' }))}
+                          className="rounded-lg px-2.5 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 cursor-pointer"
+                        >
+                          {isBn ? "ছবি সরান" : "Remove Photo"}
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-gray-500 mt-1">
+                      {isBn ? "সর্বোচ্চ ৫ মেগাবাইট · JPG, PNG বা WebP" : "Max 5MB · JPG, PNG or WebP"}
+                    </p>
+                  </div>
                 </div>
               </div>
 

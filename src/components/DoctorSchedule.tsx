@@ -146,6 +146,22 @@ export const DoctorSchedule: React.FC<DoctorScheduleProps> = ({
               className="doc-card bg-white rounded-2xl p-5 border border-[#DDE6E9]/80 shadow-sm flex flex-col justify-between"
             >
               <div>
+                <div className="flex justify-center mb-4">
+                  {doc.photo ? (
+                    <img
+                      src={doc.photo}
+                      alt={doc.name}
+                      className="w-24 h-24 rounded-full object-cover border-2 border-[#DDE6E9] shadow-sm"
+                    />
+                  ) : (
+                    <div
+                      aria-label={doc.name}
+                      className="w-24 h-24 rounded-full bg-[#E7F2F8] text-[#2D8FC1] border-2 border-[#DDE6E9] flex items-center justify-center"
+                    >
+                      <Stethoscope className="w-10 h-10" />
+                    </div>
+                  )}
+                </div>
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <span className="text-[11px] font-semibold text-[#2D8FC1] bg-[#E7F2F8] px-2.5 py-0.5 rounded-md">
                     {doc.specialty}
